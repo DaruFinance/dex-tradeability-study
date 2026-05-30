@@ -1,4 +1,4 @@
-# Data — not distributed with this repository
+# Data: not distributed with this repository
 data/
 *.parquet
 *.csv
