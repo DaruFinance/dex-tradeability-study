@@ -14,7 +14,7 @@ const REPO_URL = "https://github.com/DaruFinance/dex-tradeability-study";
 
 // Unlisted preview: keep out of search and out of site navigation until reviewed.
 export const metadata: Metadata = {
-  title: `${TITLE} — preview`,
+  title: `${TITLE} (preview)`,
   robots: { index: false, follow: false },
 };
 
