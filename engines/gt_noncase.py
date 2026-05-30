@@ -1,5 +1,5 @@
 """Recover non-EVM chains (Solana, Tron, Aptos, TON) whose base58/non-hex pool addresses are
-CASE-SENSITIVE — the mega-collector lowercased them and broke OHLCV lookups (dropped ~1,360 Solana
+CASE-SENSITIVE: the mega-collector lowercased them and broke OHLCV lookups (dropped ~1,360 Solana
 pools, the biggest memecoin market). This re-discovers them PRESERVING CASE and pulls daily+hourly
 OHLCV via CoinGecko-onchain. Writes mega_<chain>_<tf>.parquet (joins the corpus). Resumable.
 

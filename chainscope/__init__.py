@@ -1,4 +1,4 @@
-"""chainscope — multi-chain on-chain token search & research data source.
+"""chainscope: multi-chain on-chain token search & research data source.
 
 Quick start:
     import asyncio

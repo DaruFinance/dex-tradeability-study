@@ -1,4 +1,4 @@
-"""Backfill engine — turns a chain indexer into downloaded parquet datasets.
+"""Backfill engine: turns a chain indexer into downloaded parquet datasets.
 
 Generic over any `fetch(from_block, to_block) -> list[Record]` callable, so it
 drives the BSC indexer today and a Solana indexer later. Properties:
@@ -8,10 +8,10 @@ drives the BSC indexer today and a Solana indexer later. Properties:
   - bounded memory: records are flushed to parquet every flush_rows / flush_blocks,
     so a multi-million-block scan never holds the whole tape in RAM.
   - crash-safe: the cursor only advances past a block range once its rows are on
-    disk, so a mid-run crash re-scans (at most) the last unflushed window — no gaps.
+    disk, so a mid-run crash re-scans (at most) the last unflushed window, no gaps.
   - endpoint resilience: handled in the indexer's _rpc (rotates free archival RPCs).
 
-Hot-loop note: the decode/scan is pure CPU once logs are fetched — a Rust port of
+Hot-loop note: the decode/scan is pure CPU once logs are fetched, a Rust port of
 fetch_*_range is the next speedup for full-chain scans. (follow-up)
 """
 from __future__ import annotations

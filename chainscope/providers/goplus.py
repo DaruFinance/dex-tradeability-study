@@ -1,4 +1,4 @@
-"""GoPlus Security — free, no API key. Token-security ("rug") reports for both
+"""GoPlus Security: free, no API key. Token-security ("rug") reports for both
 Solana and BSC.
 
 Capabilities: rug. Covers Solana and BSC via two different endpoints.

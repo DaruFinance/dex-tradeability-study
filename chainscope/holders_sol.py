@@ -1,4 +1,4 @@
-"""Fully ON-CHAIN Solana HOLDER & WALLET analytics — pure JSON-RPC, no paid API.
+"""Fully ON-CHAIN Solana HOLDER & WALLET analytics, pure JSON-RPC, no paid API.
 
 Reconstructs the things the paid holder/whale platforms charge for, straight from
 a mainnet RPC node:
@@ -21,7 +21,7 @@ a mainnet RPC node:
                       balance, plus a best-effort net flow by paging the token account's
                       signatures and balance-diffing each transaction.
 
-SPL Token-account layout (verified — solana-program-library Account state; also the
+SPL Token-account layout (verified, solana-program-library Account state; also the
 165-byte canonical size that Token-2022 preserves for base accounts):
   mint   @ 0  (32 bytes, pubkey)
   owner  @ 32 (32 bytes, pubkey)
@@ -32,9 +32,9 @@ Token program ids (fixed mainnet addresses):
   SPL Token   = TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
   Token-2022  = TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb
 
-Docs: https://solana.com/docs/rpc/http/gettokenlargestaccounts ,
-      https://solana.com/docs/rpc/http/getprogramaccounts ,
-      https://solana.com/docs/rpc/http/gettokenaccountsbyowner ,
+Docs: https://solana.com/docs/rpc/http/gettokenlargestaccounts,
+      https://solana.com/docs/rpc/http/getprogramaccounts,
+      https://solana.com/docs/rpc/http/gettokenaccountsbyowner,
       https://github.com/solana-labs/solana-program-library (token Account state) .
 """
 from __future__ import annotations
@@ -60,7 +60,7 @@ TA_AMOUNT_OFFSET = 64             # u64 little-endian
 
 
 # Public-RPC rejections that mean "getProgramAccounts can't enumerate token accounts
-# here" — detected so all_holders() degrades to a clearly-flagged empty result rather
+# here": detected so all_holders() degrades to a clearly-flagged empty result rather
 # than faking a zero-holder set. Two distinct limits show up on api.mainnet-beta:
 #   -32010  "...excluded from account secondary indexes..."   (program de-indexed)
 #   -32012  "scan aborted: The accumulated scan results exceeded the limit"  (too many)
@@ -128,7 +128,7 @@ def _i(x) -> int | None:
 class SolHolders:
     """On-chain holder/wallet analytics for a Solana SPL token.
 
-    Owns its own JSON-RPC channel via ``self.settings.rpc_url(Chain.SOLANA)`` — it is
+    Owns its own JSON-RPC channel via ``self.settings.rpc_url(Chain.SOLANA)``, it is
     NOT a Provider (no registry capability), just a focused analytics helper that mirrors
     the raw-RPC style of solana_chain / solana_indexer.
     """
@@ -321,7 +321,7 @@ class SolHolders:
                 balances[owner] = balances.get(owner, 0) + amount_raw
 
         if not ran:
-            # neither token program returned a scan (and none tripped a known limit) —
+            # neither token program returned a scan (and none tripped a known limit),
             # don't pretend this is a clean zero-holder result.
             result["reason"] = "getProgramAccounts did not complete on any token program"
             return result
@@ -352,7 +352,7 @@ class SolHolders:
             "supply": float | None,
           }
         With only the top-20 accounts (public RPC), holder_count is None and the figures
-        are floors over those 20 — flagged via full_set=False. HHI is computed over share
+        are floors over those 20: flagged via full_set=False. HHI is computed over share
         of supply (0..1); over a full set it is the true HHI, over the top-20 it is a lower
         bound. ``hhi`` is None when no supply is known (top-20 input without pct_of_supply).
         """

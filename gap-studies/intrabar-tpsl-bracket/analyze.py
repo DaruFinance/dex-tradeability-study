@@ -71,7 +71,7 @@ def main():
         ax.set_xticks(x); ax.set_xticklabels([RLAB[r] for r in RULES], rotation=20, ha="right", fontsize=8)
         ax.set_title(f"{tf} bars"); ax.set_ylabel("median OOS profit factor (all evals)")
         ax.legend(fontsize=7)
-    fig.suptitle("Median OOS PF by intrabar TP/SL resolution rule — real vs null")
+    fig.suptitle("Median OOS PF by intrabar TP/SL resolution rule, real vs null")
     fig.tight_layout(); fig.savefig(FIG/"fig1_medpf_by_rule.pdf"); plt.close(fig)
 
     # ---- FIG 2: mean net/trade (bp) by rule, real vs null ----
@@ -86,7 +86,7 @@ def main():
         ax.set_xticks(x); ax.set_xticklabels([RLAB[r] for r in RULES], rotation=20, ha="right", fontsize=8)
         ax.set_title(f"{tf} bars"); ax.set_ylabel("mean net return per trade (bp)")
         ax.legend(fontsize=7)
-    fig.suptitle("Mean net return/trade by resolution rule — real vs null (net of ~164bp RT cost)")
+    fig.suptitle("Mean net return/trade by resolution rule, real vs null (net of ~164bp RT cost)")
     fig.tight_layout(); fig.savefig(FIG/"fig2_net_by_rule.pdf"); plt.close(fig)
 
     # ---- FIG 3: per-family OOS PF under SL-first vs TP-first (real, the strongest tf) ----

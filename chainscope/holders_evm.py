@@ -1,7 +1,7 @@
-"""EVM (BSC) HOLDER & WALLET analytics — reconstructed entirely on-chain from raw
+"""EVM (BSC) HOLDER & WALLET analytics, reconstructed entirely on-chain from raw
 ERC-20 `Transfer` logs via eth_getLogs. No third-party index, no key. This is the
 data the paid platforms (Nansen/Birdeye) charge most for: holder distribution,
-concentration, whale tracking, and per-wallet PnL — here we dig it from the chain.
+concentration, whale tracking, and per-wallet PnL, here we dig it from the chain.
 
 The single primitive is the ERC-20 Transfer event:
     Transfer(address indexed from, address indexed to, uint256 value)
@@ -17,15 +17,15 @@ exact (integer arithmetic, scaled by decimals() only for the human-readable view
 
 THROUGHPUT, NOT DATA, IS THE LIMIT. Full reconstruction is feasible for new /
 long-tail tokens (thousands of transfers) but heavy for mega-cap tokens (millions
-of transfers) — that is a throughput limit on free public RPCs, not a limit of the
+of transfers), that is a throughput limit on free public RPCs, not a limit of the
 method. Point BSC_ARCHIVE_RPC_URL at a local archive node to lift it. When a scan
 is capped by MAX_CHUNKS this module emits a LOUD truncation warning and marks the
-result `truncated=True` — there are no silent caps.
+result `truncated=True`, there are no silent caps.
 
 `holders_at(token, block)` re-runs the same reconstruction with to_block pinned to
 a historical block, so distribution can be tracked OVER TIME (concentration at
 launch vs now). `wallet_token_pnl` nets a single wallet's in/out flows of the token
-and, given an optional price, computes realized/unrealized PnL — kept on-chain:
+and, given an optional price, computes realized/unrealized PnL, kept on-chain:
 position = sum(in) - sum(out).
 """
 from __future__ import annotations
@@ -163,7 +163,7 @@ class EvmHolders:
         truncated = b <= to_block
         if truncated:
             log.warning(
-                "EvmHolders: TRUNCATED reconstruction of %s — scanned %d blocks then hit "
+                "EvmHolders: TRUNCATED reconstruction of %s, scanned %d blocks then hit "
                 "MAX_CHUNKS=%d at block %d (target end %d). Holder set is INCOMPLETE. "
                 "Point BSC_ARCHIVE_RPC_URL at a local archive node, or narrow the block "
                 "range. This is a throughput cap, not a data limit.",
@@ -190,7 +190,7 @@ class EvmHolders:
         their net flow is reported as `minted`/`burned` so the supply identity checks.
 
         NOTE: full reconstruction is feasible for new / long-tail tokens (thousands
-        of transfers) but heavy for mega-cap tokens (millions of transfers) — a
+        of transfers) but heavy for mega-cap tokens (millions of transfers), a
         throughput limit on free RPCs, not a data limit. A local archive node lifts
         it. If the scan is capped, `truncated` is True and a loud warning is logged.
         """
@@ -248,7 +248,7 @@ class EvmHolders:
     async def holders_at(self, token: str, block: int,
                          from_block: int | None = None) -> dict:
         """Holder balances reconstructed AS-OF a historical block (to_block=block).
-        Lets distribution be tracked over time — e.g. concentration at launch vs now.
+        Lets distribution be tracked over time: e.g. concentration at launch vs now.
         Same return shape as holder_balances."""
         return await self.holder_balances(token, from_block=from_block, to_block=block)
 
@@ -301,7 +301,7 @@ class EvmHolders:
         n = len(ordered_desc)
         if n <= 1 or total <= 0:
             return 0.0
-        asc = ordered_desc[::-1]  # ascending
+        asc = ordered_desc[:-1]  # ascending
         cum = 0.0
         weighted = 0.0
         for i, v in enumerate(asc, start=1):
@@ -372,9 +372,9 @@ class EvmHolders:
                 "(supply a price feed upstream)."
             )
         else:
-            notes.append("no price_usd supplied — quantities only (on-chain position).")
+            notes.append("no price_usd supplied, quantities only (on-chain position).")
         if truncated:
-            notes.append("TRUNCATED scan — flows incomplete; use a local archive node.")
+            notes.append("TRUNCATED scan, flows incomplete; use a local archive node.")
 
         return {
             "wallet": wallet,

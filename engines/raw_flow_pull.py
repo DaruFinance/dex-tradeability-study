@@ -1,6 +1,6 @@
 """Pull raw trade tapes (with BUY/SELL sides + reserves) for the top BSC DEX-only coins via NodeReal.
 
-This gets the on-chain FLOW data GeckoTerminal cannot (taker buy/sell imbalance per trade) — the
+This gets the on-chain FLOW data GeckoTerminal cannot (taker buy/sell imbalance per trade), the
 input to the actual thesis (flow archetype) that simple OHLCV TA can't express. Slow (block-bound
 getLogs) but targeted to a handful of coins. Writes to the 'flow_trades' parquet dataset.
 

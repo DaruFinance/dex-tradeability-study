@@ -61,7 +61,7 @@ def main():
     print(f"  total return: median={np.median(finals):+.2f} mean={np.mean(finals):+.2f} %>0={100*(finals>0).mean():.0f}%")
     print(f"  drawdown-from-peak-at-end: median={np.median(dd):.2f}  %coins down>50% from peak={100*(dd<-0.5).mean():.0f}%  >80%={100*(dd<-0.8).mean():.0f}%")
     print(f"  -> panel DOES contain losers: {100*(finals<-0.5).mean():.0f}% of coins ended down >50%, {100*(finals<-0.9).mean():.0f}% down >90% (rug-like).")
-    print(f"  (so cross-sectional momentum CAN pick coins that then crash — a meaningful survivorship test, though GT-list sourcing means truly-delisted coins are still under-counted.)")
+    print(f"  (so cross-sectional momentum CAN pick coins that then crash, a meaningful survivorship test, though GT-list sourcing means truly-delisted coins are still under-counted.)")
 
     # exclude stablecoins (near-zero vol) from the tradeable signal universe
     keep = {pair for pair, g in df.groupby("pair_address")

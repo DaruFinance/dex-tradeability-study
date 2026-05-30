@@ -142,7 +142,7 @@ def wfo_vs_null(df, col="apr", n_null=300):
 
 
 def report(out, tag):
-    print(f"\n{'='*92}\nROBUST RUN [{tag}] — volume cap={VOL_CAP_DAILY}x/day, LVR haircut applied\n{'='*92}")
+    print(f"\n{'='*92}\nROBUST RUN [{tag}], volume cap={VOL_CAP_DAILY}x/day, LVR haircut applied\n{'='*92}")
     rows = []
     for mode in ("full", "conc"):
         d = out[mode]
@@ -165,7 +165,7 @@ def report(out, tag):
 if __name__ == "__main__":
     t0 = time.time()
     allrows = []
-    # uncapped, no-LVR (theoretical max — matches lp_backtest)
+    # uncapped, no-LVR (theoretical max, matches lp_backtest)
     out0 = run(vol_cap=False, lvr=False, tag="theoretical"); allrows += report(out0, "theoretical_max")
     # capped volume only
     out1 = run(vol_cap=True, lvr=False, tag="volcap"); allrows += report(out1, "volcap_only")

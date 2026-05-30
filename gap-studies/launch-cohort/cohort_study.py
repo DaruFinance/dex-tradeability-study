@@ -12,12 +12,12 @@ the launch window where DEX edge supposedly lives. Here we:
      build the median / mean / quantile fan of the average price path over the
      first N days. Characterize pump-then-bleed.
 
- (B) STRATEGY 1 — LAUNCH-WINDOW LONG. Enter at age t (=k days after first bar),
+ (B) STRATEGY 1, LAUNCH-WINDOW LONG. Enter at age t (=k days after first bar),
      long-only, intrabar TP/SL, per-fill cost, WFO (select entry-age + bracket IS,
      evaluate OOS on held-out cohort of coins). NULL = permute which coin each
      path belongs to (cross-coin shuffle) through the identical pipeline.
 
- (C) STRATEGY 2 — "AVOID FIRST N DAYS" FILTER on the phase9 16-family test.
+ (C) STRATEGY 2, "AVOID FIRST N DAYS" FILTER on the phase9 16-family test.
      Re-run a representative timing test (a) on ALL bars (baseline) and (b)
      skipping the first N bars of each coin. Compare OOS PF + net/trade, both vs
      a bar-shuffle null. Does excising the early bleed window lift edge?

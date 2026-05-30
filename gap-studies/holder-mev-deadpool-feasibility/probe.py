@@ -39,7 +39,7 @@ def rpc(url, method, params, tmo=20):
 
 
 # ----------------------------------------------------------------------------
-# PART A — MEV sandwich metric on the real BSC trade tape (fully on-disk)
+# PART A: MEV sandwich metric on the real BSC trade tape (fully on-disk)
 # Re-implements chainscope.mev.detect_sandwiches logic per (pair, block).
 # ----------------------------------------------------------------------------
 def detect_block(g):
@@ -117,7 +117,7 @@ def part_a_mev():
 
 
 # ----------------------------------------------------------------------------
-# PART B — Holder feasibility (bounded, serial RPC)
+# PART B: Holder feasibility (bounded, serial RPC)
 # ----------------------------------------------------------------------------
 def part_b_holders():
     log = []
@@ -144,7 +144,7 @@ def part_b_holders():
 
 
 # ----------------------------------------------------------------------------
-# PART C — Dead-pool / survivorship
+# PART C: Dead-pool / survivorship
 # ----------------------------------------------------------------------------
 def part_c_deadpool():
     # (1) near-dead proxy from on-disk OHLCV decay within the LIVE universe

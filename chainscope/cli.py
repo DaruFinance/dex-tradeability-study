@@ -1,4 +1,4 @@
-"""chainscope CLI — search tokens and pull rich on-chain data for Solana + BSC."""
+"""chainscope CLI: search tokens and pull rich on-chain data for Solana + BSC."""
 from __future__ import annotations
 
 import asyncio
@@ -417,13 +417,13 @@ def serve(host: str = typer.Option("0.0.0.0", help="bind address (0.0.0.0 so WSL
     """Launch the LOCAL web dashboard (cross-sectional coin screener + per-coin
     drill-down) over the parquet store. Needs `pip install fastapi uvicorn`.
 
-    Binds 0.0.0.0 by default — required for WSL: a 127.0.0.1-only bind inside WSL
+    Binds 0.0.0.0 by default, required for WSL: a 127.0.0.1-only bind inside WSL
     is not reliably reachable from the Windows browser. Open http://localhost:PORT
     on Windows (or http://<wsl-ip>:PORT if localhost forwarding is off)."""
     try:
         import uvicorn
     except ImportError:
-        console.print("[red]missing deps[/red] — run: pip install fastapi uvicorn")
+        console.print("[red]missing deps[/red], run: pip install fastapi uvicorn")
         raise typer.Exit(1)
     console.print(f"[green]chainscope terminal[/green] -> open http://localhost:{port} on Windows")
     uvicorn.run("chainscope.ui.app:app", host=host, port=port, reload=reload)

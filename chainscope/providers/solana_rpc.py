@@ -1,4 +1,4 @@
-"""Solana JSON-RPC — free, no API key. Ground-truth token-safety signals read
+"""Solana JSON-RPC: free, no API key. Ground-truth token-safety signals read
 directly from a mainnet RPC node, complementing the security-API providers.
 
 Capabilities: token, rug. Solana only.

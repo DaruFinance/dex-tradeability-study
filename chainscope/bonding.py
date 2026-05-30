@@ -1,19 +1,19 @@
-"""Pre-graduation bonding-curve trade decoder — the trades a DEX indexer can't see.
+"""Pre-graduation bonding-curve trade decoder: the trades a DEX indexer can't see.
 
 Meme launches trade on a *bonding-curve* contract/program BEFORE they "graduate"
 to a real DEX pool (PancakeSwap on BSC, PumpSwap/Raydium on Solana). Until that
 migration, every buy/sell happens against the launchpad's curve, so the PancakeSwap
 / Raydium log-scanning indexers (bsc_indexer / solana_indexer) see nothing. This
-module reads those pre-graduation trades straight off the chain — no third-party
+module reads those pre-graduation trades straight off the chain, no third-party
 index, no key, stdlib only.
 
-Two decoders (NOT Providers — the parent integrates these):
+Two decoders (NOT Providers, the parent integrates these):
 
-  FourMemeBonding  — BSC four.meme curve, via eth_getLogs of the TokenManager2
+  FourMemeBonding : BSC four.meme curve, via eth_getLogs of the TokenManager2
                      TokenPurchase / TokenSale events. Priced in BNB; USD anchored
                      off the WBNB/USDT pool reserves (same approach as bsc_indexer).
 
-  PumpFunBonding   — Solana pump.fun curve, via getSignaturesForAddress +
+  PumpFunBonding  : Solana pump.fun curve, via getSignaturesForAddress +
                      getTransaction, decoding the anchor `TradeEvent` emitted as a
                      `Program data:` log line (event-CPI: 8-byte self-CPI sentinel +
                      8-byte event discriminator + borsh body). Priced in SOL; USD
@@ -47,7 +47,7 @@ def _now() -> datetime:
 
 
 # ===========================================================================
-# four.meme (BSC) — bonding-curve buy/sell decoder
+# four.meme (BSC), bonding-curve buy/sell decoder
 # ===========================================================================
 
 # four.meme TokenManager2 (the bonding-curve manager; buys/sells fire here).
@@ -60,10 +60,10 @@ FOURMEME_MANAGER = "0x5c952063c7fc8610ffdb798152d69f0b9550762b"
 # - account : the trader (maker)
 # - price   : contract-internal price scalar (we use cost/amount instead)
 # - amount  : token amount (18-dec)
-# - cost    : BNB moved (18-dec) — quote leg
+# - cost    : BNB moved (18-dec), quote leg
 # - fee     : BNB fee (18-dec)
-# - offers  : curve token offering remaining (18-dec) — graduation progress input
-# - funds   : BNB raised so far on the curve (18-dec) — graduation progress input
+# - offers  : curve token offering remaining (18-dec), graduation progress input
+# - funds   : BNB raised so far on the curve (18-dec), graduation progress input
 # Verified live (2026-05): both topic0s observed on the manager, both decode to the
 # 8-word layout with cost/amount == price (BNB per token).
 TOKEN_PURCHASE_TOPIC = "0x7db52723a3b2cdd6164364b3b766e65e540d7be48ffa89582956d8eaebe62942"
@@ -288,7 +288,7 @@ class FourMemeBonding:
 
 
 # ===========================================================================
-# pump.fun (Solana) — bonding-curve TradeEvent decoder
+# pump.fun (Solana), bonding-curve TradeEvent decoder
 # ===========================================================================
 
 PUMPFUN_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
@@ -346,7 +346,7 @@ def _b58decode(s: str) -> bytes:
 
 
 class _BorshReader:
-    """Minimal little-endian borsh reader — only the primitives TradeEvent needs."""
+    """Minimal little-endian borsh reader: only the primitives TradeEvent needs."""
 
     def __init__(self, data: bytes):
         self.d = data
@@ -381,7 +381,7 @@ class PumpFunBonding:
     SOL; USD anchored off a Raydium SOL/USDC pool when cheaply readable. Once a token
     graduates to PumpSwap, these events stop and solana_indexer takes over.
 
-    Public Solana RPC throttles getTransaction hard — keep `limit` small (<=20).
+    Public Solana RPC throttles getTransaction hard, keep `limit` small (<=20).
     """
 
     def __init__(self, http, settings):
@@ -468,7 +468,7 @@ class PumpFunBonding:
         """Match the TradeEvent discriminator and borsh-decode the prefix we need.
 
         Frame may be [sentinel(8) | disc(8) | body] (anchor event-CPI) or [disc(8) |
-        body]. Only the leading borsh fields are read — the official IDL appends many
+        body]. Only the leading borsh fields are read, the official IDL appends many
         trailing fields (fees, a variable-length ix_name string, a Shareholder vec),
         so the body is NOT fixed-length; we decode through real_token_reserves and stop.
         """
@@ -549,7 +549,7 @@ class PumpFunBonding:
 
         Pages signatures on the mint (falls back from the bonding-curve PDA), then
         getTransaction + scans logMessages for the TradeEvent. Caps getTransaction
-        calls to `limit` (public RPC throttles hard — keep it small). HttpError is
+        calls to `limit` (public RPC throttles hard, keep it small). HttpError is
         swallowed (returns what decoded). USD fields are populated only if the
         Raydium SOL/USDC anchor was cheaply readable, else price_native is in SOL."""
         # Prefer the mint (every curve trade touches it); the PDA is derived as a
@@ -609,7 +609,7 @@ class PumpFunBonding:
 
 
 # ---------------------------------------------------------------------------
-# ed25519 on-curve test (for the bonding-curve PDA derivation) — pure Python.
+# ed25519 on-curve test (for the bonding-curve PDA derivation), pure Python.
 # A point hash is a valid PDA only if it is NOT a point on the ed25519 curve.
 # ---------------------------------------------------------------------------
 _ED_P = 2 ** 255 - 19

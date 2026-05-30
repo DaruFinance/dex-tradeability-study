@@ -2,7 +2,7 @@
 
 Decides, per coin token, whether it is listed on any MAJOR CEX (-> EXCLUDE from the
 DEX-only universe) using a SINGLE CoinGecko contract call per token (its inline `tickers`
-array already enumerates venues; we do NOT page /tickers — that rate-limits the keyless
+array already enumerates venues; we do NOT page /tickers, that rate-limits the keyless
 tier into uselessness). 404 = token not tracked by CoinGecko = obscure/DEX-only = INCLUDE.
 
 Conservative: exclude any coin EVER listed on a major CEX (CoinGecko gives current

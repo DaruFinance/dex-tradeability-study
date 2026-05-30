@@ -13,7 +13,7 @@ Features
     voltrend    : dollar_vol_recent / dollar_vol_older  (volume trend)
     dvaccel     : dollar-volume acceleration = d(rolling dollar_vol)
     volgrowth   : realized growth of dollar volume (proxy for reserve growth; reserve not time-series)
-  Static snapshot (universe meta, sorted ONCE — flagged as snapshot, mild lookahead in TIMING but
+  Static snapshot (universe meta, sorted ONCE, flagged as snapshot, mild lookahead in TIMING but
   legitimate as a coin-PICKING prior; we report separately):
     age_days    : coin age cohort
     snap_turn   : vol24/reserve_usd snapshot

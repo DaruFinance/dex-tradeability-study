@@ -1,4 +1,4 @@
-"""Multi-pool routing / liquidity-graph — split an order across the pools a token
+"""Multi-pool routing / liquidity-graph: split an order across the pools a token
 trades in, instead of mispricing it against a single pool.
 
 A token rarely lives in one pool. It trades across several fee tiers and DEXs at
@@ -31,13 +31,13 @@ so the blended price is a true average-fill, not a marginal one.
 
 On-chain only: `gather_pools_onchain` reads each pool's live reserves via eth_call
 (V2 getReserves(); V3 virtual reserves from slot0()/liquidity()), mirroring the
-pattern in providers/bsc_indexer.py — no third-party index, no API key.
+pattern in providers/bsc_indexer.py, no third-party index, no API key.
 
 Caveats:
   * Reserves are a static snapshot at call time, not per-bar; for a backtest pull
     reserves per bar (Sync/Swap events) rather than a single `latest` read.
   * V3 depth is the *local* in-tick virtual reserve (L, sqrtP); exact only for fills
-    that don't cross ticks. Large fills walk multiple ticks — combine with a tick
+    that don't cross ticks. Large fills walk multiple ticks, combine with a tick
     map (ticks.py) for the full curve. Here it is a single-tick approximation.
   * Cross-DEX gas (one swap per pool touched) is NOT included in the split cost;
     add `len(allocations) * gas_usd` from costs.py if routing across many venues.
@@ -63,14 +63,14 @@ STABLES = {
     "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",  # USDC (BSC)
     "0xe9e7cea3dedca5984780bafc599bd69add087d56",  # BUSD (BSC)
 }
-# WBNB — common non-stable quote; price quoted in native unless a USD anchor is given
+# WBNB: common non-stable quote; price quoted in native unless a USD anchor is given
 WBNB = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 
 _DEFAULT_STEPS = 2000   # greedy increments; 2000 gives sub-bp allocation granularity
 
 
 # --------------------------------------------------------------------------- #
-# split_route — the core allocator                                            #
+# split_route: the core allocator                                            #
 # --------------------------------------------------------------------------- #
 
 def _norm_side(side: str) -> str:
@@ -131,7 +131,7 @@ def split_route(pools: list[dict], size_usd: float, side: str = "buy",
     implemented greedily: the order is handed out in `steps` increments, each to the
     pool with the best current marginal price. Returns allocations, the size-weighted
     blended price/impact, the total cost fraction vs the best single pool's mid, and
-    `vs_single_pool` — the fractional cost saving over routing 100% through the
+    `vs_single_pool`: the fractional cost saving over routing 100% through the
     deepest pool.
     """
     side = _norm_side(side)
@@ -223,7 +223,7 @@ def split_route(pools: list[dict], size_usd: float, side: str = "buy",
 
 
 # --------------------------------------------------------------------------- #
-# gather_pools_onchain — read live reserves for each pool                      #
+# gather_pools_onchain: read live reserves for each pool                      #
 # --------------------------------------------------------------------------- #
 
 def _u(hexstr: str, start: int, end: int) -> int:
@@ -350,7 +350,7 @@ async def gather_pools_onchain(http, settings, chain, pool_addresses: list[str],
     from slot0+liquidity), and compute the base price in the quote token. If the quote
     is a stablecoin the price is already in USD and reserve_usd is exact. For a native
     quote (WBNB) pass `quote_price_usd` (the BNB/USD price) to anchor both the price and
-    the depth in USD — otherwise price/reserve are left in quote-token units and that
+    the depth in USD: otherwise price/reserve are left in quote-token units and that
     pool will only be routable alongside same-quote pools (the caller should pass the
     anchor). Mirrors bsc_indexer's eth_call decoding; no API key, no third-party index.
     """
@@ -382,7 +382,7 @@ async def gather_pools_onchain(http, settings, chain, pool_addresses: list[str],
             price_usd = price_q * quote_price_usd
             quote_usd = quote_r * quote_price_usd
         else:
-            # unanchored native quote — keep in quote-token units (router will skip
+            # unanchored native quote: keep in quote-token units (router will skip
             # mixing with USD pools, but same-quote pools still route together)
             price_usd = price_q
             quote_usd = quote_r
@@ -400,7 +400,7 @@ async def gather_pools_onchain(http, settings, chain, pool_addresses: list[str],
 
 
 # --------------------------------------------------------------------------- #
-# liquidity_graph — depth summary across pools                                 #
+# liquidity_graph: depth summary across pools                                 #
 # --------------------------------------------------------------------------- #
 
 def liquidity_graph(pools: list[dict]) -> dict:

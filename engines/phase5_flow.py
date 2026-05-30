@@ -1,4 +1,4 @@
-"""Phase 5: FLOW archetype test — does on-chain taker buy/sell imbalance have OOS edge where
+"""Phase 5: FLOW archetype test, does on-chain taker buy/sell imbalance have OOS edge where
 price/volume TA does not? Uses raw trade tapes (flow_trades dataset, with sides + reserves) that
 GeckoTerminal cannot provide. This is the actual thesis (the D-series flow archetype).
 
@@ -50,7 +50,7 @@ def simulate_t(c, ts, sig, mh, st, cost):
 
 def main():
     if not glob.glob(f"{DATA}/flow_trades/**/*.parquet", recursive=True):
-        print("no flow_trades yet — raw pull still running."); return
+        print("no flow_trades yet, raw pull still running."); return
     df = bars_from_trades()
     df["total"] = df.buy_usd + df.sell_usd
     df["imb"] = np.where(df.total > 0, (df.buy_usd - df.sell_usd) / df.total, 0.0)

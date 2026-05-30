@@ -1,11 +1,11 @@
-"""PumpPortal — real-time pump.fun launch + graduation stream (Solana only).
+"""PumpPortal: real-time pump.fun launch + graduation stream (Solana only).
 
 A single websocket carries new-token creation events and migration
 (graduation) events. We subscribe to both and yield canonical Launch records
 as they arrive, reconnecting transparently on connection drops.
 
 Capabilities: stream_launches. Solana only.
-Unlike the HTTP providers this connects the `websockets` library directly —
+Unlike the HTTP providers this connects the `websockets` library directly,
 the data is a persistent stream, not a request/response fetch.
 Docs: https://pumpportal.fun/data-api/real-time
 """

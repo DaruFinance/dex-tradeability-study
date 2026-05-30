@@ -1,4 +1,4 @@
-"""MASS data collection via GeckoTerminal — thousands of tradeable coin histories across many chains.
+"""MASS data collection via GeckoTerminal: thousands of tradeable coin histories across many chains.
 
 Beats GT's ~200/list cap by hitting MANY endpoints per chain (default pools, volume/tx sorts,
 new_pools, top-DEX pools) and dedup. Two resumable stages:

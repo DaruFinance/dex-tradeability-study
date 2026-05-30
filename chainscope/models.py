@@ -87,7 +87,7 @@ class Pool(Record):
 class OHLCV(Record):
     """A price bar. For backtesting, prefer the finest granularity available and
     use high/low (not close) for TP/SL fill logic. `reserve_usd` (when the source
-    provides it) is the pool depth at bar time — needed to model slippage."""
+    provides it) is the pool depth at bar time, needed to model slippage."""
     chain: Chain
     pair_address: str
     timeframe: str            # e.g. "1m", "5m", "1h", "1d"
@@ -102,7 +102,7 @@ class OHLCV(Record):
 
 
 class Trade(Record):
-    """An individual on-chain swap — the ground truth for fill/slippage modeling.
+    """An individual on-chain swap: the ground truth for fill/slippage modeling.
     `side` is from the base token's perspective ("buy" = base bought with quote)."""
     chain: Chain
     pair_address: str
@@ -126,7 +126,7 @@ class Trade(Record):
 
 
 class PoolCreation(Record):
-    """A pool/pair creation event — the unit of the historical token universe.
+    """A pool/pair creation event: the unit of the historical token universe.
     Scanning these across all of history (incl. pools now dead/rugged) is what
     makes a cross-sectional backtest survivorship-free."""
     chain: Chain

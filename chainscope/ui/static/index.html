@@ -111,9 +111,9 @@
   .spin{color:var(--amber)}
   .err{color:var(--red);font-size:11px;padding:8px 14px}
   .costrow{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
-  ::-webkit-scrollbar{width:9px;height:9px}
-  ::-webkit-scrollbar-thumb{background:#1d262f;border-radius:4px}
-  ::-webkit-scrollbar-track{background:transparent}
+  :-webkit-scrollbar{width:9px;height:9px}
+  :-webkit-scrollbar-thumb{background:#1d262f;border-radius:4px}
+  :-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body>
@@ -164,8 +164,8 @@
       <div class="placeholder">
         Select a coin from the screener to drill in.<br/><br/>
         The screener ranks every coin/pool in the parquet store by on-chain
-        metrics — <b>volume</b>, <b>liquidity</b>, <b>trade count</b>,
-        <b>buy/sell pressure</b>, <b>age</b>, <b>holder concentration</b> —
+        metrics: <b>volume</b>, <b>liquidity</b>, <b>trade count</b>,
+        <b>buy/sell pressure</b>, <b>age</b>, <b>holder concentration</b>,
         so you can decide what to trade. Click a row for its full dossier
         (price chart, rug flags, cost curve, recent tape).
       </div>
@@ -352,7 +352,7 @@ function flagsFor(rug){
 function renderDossier(d, o){
   const dd=$('#drill');
   if(!d || (d.error && !d.address)){ dd.innerHTML='<div class="err">'+(d&&d.error||'no data')+'</div>'; return; }
-  const sym=d.symbol||'—', name=d.name||'';
+  const sym=d.symbol||', ', name=d.name||'';
   const rug=d.rug;
   const dom=d.dominant_pool||{};
   const concentr = rug && rug.top10_holder_pct!=null ? rug.top10_holder_pct : null;

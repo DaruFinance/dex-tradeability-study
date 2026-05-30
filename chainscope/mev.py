@@ -3,12 +3,12 @@
 Why this exists: a DEX backtest that fills at the observed trade price is dishonest.
 In a public mempool your swap can be SANDWICHED (an attacker front-runs your buy to
 push price up, lets you fill at the worse price, then back-runs to dump) and, more
-mundanely, swaps REVERT — you pay gas and get no fill. Both are pure realized-cost
+mundanely, swaps REVERT, you pay gas and get no fill. Both are pure realized-cost
 phenomena that the tape already records; this module quantifies them from the same
 `Trade` records the indexers produce, then exposes a slippage pad the cost model can
-absorb. No third-party MEV index, no API key — on-chain data only.
+absorb. No third-party MEV index, no API key, on-chain data only.
 
-Module-level functions (deliberately NOT a Provider — this is post-processing over a
+Module-level functions (deliberately NOT a Provider, this is post-processing over a
 tape an indexer already returned, plus one direct revert query against an indexer):
 
   detect_sandwiches(trades)        -> attack/victim summary; mutates Trade.sandwiched
@@ -22,7 +22,7 @@ the SAME block, and the attacker controls execution order via priority fee / bui
 We therefore order trades by (block_number, log_index, block_time) and only ever look
 for the pattern *within one block_number*. `block_number`/`log_index` are populated by
 the indexers from the raw log (EVM blockNumber/logIndex; Solana slot/in-slot position).
-If they are missing (e.g. the indexer hasn't been wired to set them yet — see the
+If they are missing (e.g. the indexer hasn't been wired to set them yet, see the
 parent's in-flight change), we fall back to block_time ordering and, because there is
 then no reliable intra-block resolution, we report zero attacks with `note` set rather
 than guessing across block boundaries (which would manufacture false positives).
@@ -38,7 +38,7 @@ LIMITATIONS (documented, not faked)
   (the bsc_indexer's only window onto the chain) literally cannot see it. Honest revert
   counting on BSC requires scanning full blocks (eth_getBlockByNumber with
   full-tx=True) or trace_block, filtering to the router, and checking each tx's receipt
-  status — none of which the bsc_indexer exposes today. `revert_stats` therefore returns
+  status: none of which the bsc_indexer exposes today. `revert_stats` therefore returns
   a `supported=False` stub for BSC with the approach written out, rather than a number.
 - Sandwich detection needs `maker` set on trades. The bsc_indexer's V2/V3 trade builders
   do not currently populate `maker` (the swap `to`/recipient is in the log, but the real
@@ -81,13 +81,13 @@ def detect_sandwiches(trades: list[Trade]) -> dict:
 
     Pattern (within one block): attacker A does a BUY (front-run), one or more OTHER
     makers' trades B execute, then the SAME attacker A does a SELL (back-run). Every
-    bracketed victim that trades in the front-run direction (BUY — they pay the price A
+    bracketed victim that trades in the front-run direction (BUY, they pay the price A
     just inflated) is flagged `sandwiched=True`.
 
     Victim extra cost is estimated as the price gap between the victim's fill price and
     the block's PRE-sandwich price (the price right before A's front-run), as a fraction:
         (victim_price - pre_price) / pre_price          for a buy victim.
-    This is a lower bound — it ignores A's second leg and multi-attacker stacks.
+    This is a lower bound: it ignores A's second leg and multi-attacker stacks.
 
     Returns:
         {
@@ -120,7 +120,7 @@ def detect_sandwiches(trades: list[Trade]) -> dict:
     # We can only resolve the intra-block ordering a sandwich requires if trades carry
     # block_number (to group a block) AND some intra-block tiebreak (log_index). Without
     # both, fall back to time order but DON'T scan for the pattern across block
-    # boundaries — that would invent attacks. Report zero with a note instead.
+    # boundaries: that would invent attacks. Report zero with a note instead.
     if not (have_block and have_logidx):
         missing = []
         if not have_block:
@@ -128,7 +128,7 @@ def detect_sandwiches(trades: list[Trade]) -> dict:
         if not have_logidx:
             missing.append("log_index")
         result["note"] = (
-            "no intra-block ordering ({} unset on the tape) — indexers must populate "
+            "no intra-block ordering ({} unset on the tape), indexers must populate "
             "these for sandwich detection; returning zero attacks".format(", ".join(missing))
         )
         return result
@@ -136,7 +136,7 @@ def detect_sandwiches(trades: list[Trade]) -> dict:
 
     if not have_maker:
         result["note"] = (
-            "trades have no `maker` set — cannot identify the attacker across both legs; "
+            "trades have no `maker` set: cannot identify the attacker across both legs; "
             "returning zero attacks (indexer must populate Trade.maker)"
         )
         return result
@@ -224,7 +224,7 @@ async def revert_stats(indexer, chain, pool: str, limit: int = 500) -> dict:
     a pool address sees more than just swaps (LP ops, etc.), so this is the revert rate
     of *interactions with the pool*, an upper-bound proxy for swap reverts specifically.
 
-    BSC: NOT directly supported — reverted swaps emit no Swap/Sync event, so the
+    BSC: NOT directly supported, reverted swaps emit no Swap/Sync event, so the
     bsc_indexer's eth_getLogs view is blind to them. Returns a stub documenting the
     real approach (full-block / trace scan filtered to the router) rather than a number.
 
@@ -370,7 +370,7 @@ def sandwich_padding_frac(sandwich_summary: dict, base_pad_frac: float = 0.0) ->
         sandwich_summary: the dict from detect_sandwiches(). If it additionally carries a
             "total_trades" key (number of trades scanned), probability uses it; otherwise
             probability falls back to victim_count over (victim_count + a smoothing 1)
-            which is conservative (over-states the pad on tiny samples — the safe side).
+            which is conservative (over-states the pad on tiny samples, the safe side).
         base_pad_frac: an optional floor added unconditionally (e.g. a minimum MEV tax you
             always want to assume on a public-mempool chain).
 

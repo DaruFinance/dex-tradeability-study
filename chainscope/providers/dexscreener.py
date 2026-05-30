@@ -1,4 +1,4 @@
-"""DexScreener — free, no API key. Reference implementation other providers mirror.
+"""DexScreener: free, no API key. Reference implementation other providers mirror.
 
 Capabilities: search, token, pools, new_pairs.
 Covers both Solana and BSC. No OHLCV, no holders (use GeckoTerminal / Birdeye for those).

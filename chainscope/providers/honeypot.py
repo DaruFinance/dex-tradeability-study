@@ -1,4 +1,4 @@
-"""Honeypot.is — free, no API key. BSC-only honeypot / tax simulator.
+"""Honeypot.is, free, no API key. BSC-only honeypot / tax simulator.
 
 Capabilities: rug. BSC only (the v2 endpoint also covers a few other EVM chains,
 but chainscope only models BSC here).

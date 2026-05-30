@@ -1,4 +1,4 @@
-"""BNB Smart Chain JSON-RPC — free, no API key. Ground-truth token-safety
+"""BNB Smart Chain JSON-RPC: free, no API key. Ground-truth token-safety
 signals read directly from a BSC node via eth_call, complementing the
 security-API providers.
 

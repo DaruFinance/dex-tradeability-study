@@ -47,7 +47,7 @@ app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 # --------------------------------------------------------------------------- #
 def _query() -> Query:
     """A fresh Query per request: re-scans the store so newly written datasets
-    (and partitions) light up without restarting the server. Cheap — DuckDB just
+    (and partitions) light up without restarting the server. Cheap, DuckDB just
     registers views over the parquet globs; no data is materialized until a SQL
     call runs."""
     return Query()
@@ -150,7 +150,7 @@ def api_screener(
         with _query() as q:
             if "trades" not in q.datasets():
                 return _ok({"rows": [], "columns": sorted(_SCREENER_COLUMNS),
-                            "note": "no `trades` dataset yet — populate via `cohort` or `backfill`"})
+                            "note": "no `trades` dataset yet, populate via `cohort` or `backfill`"})
 
             where = []
             if chain:

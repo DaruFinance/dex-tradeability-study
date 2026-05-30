@@ -1,4 +1,4 @@
-"""Bitquery — premium deep-history backtest source (requires BITQUERY_TOKEN).
+"""Bitquery: premium deep-history backtest source (requires BITQUERY_TOKEN).
 
 Capabilities: ohlcv, trades, launch. Covers both Solana and BSC.
 Full trade tape + time-bucketed OHLCV across years (uses the `archive` dataset

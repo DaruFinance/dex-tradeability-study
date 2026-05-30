@@ -2,7 +2,7 @@
 
 Pages a pool's swaps (with USD value + trader wallet), classifies buy/sell of the coin, aggregates
 to DAILY buy_usd / sell_usd / unique buyers / trade count. The Token API is rate-limited (no points
-cap), so this is paced SLOW with long backoff and runs for hours — resumable. Writes
+cap), so this is paced SLOW with long backoff and runs for hours, resumable. Writes
 _tokenapi_flow_daily.parquet. This is what price data can't give: net-buy pressure + smart-money.
 
 Usage: python3 _research/tokenapi_flow.py <max_coins> <pace_seconds>

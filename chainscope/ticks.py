@@ -16,7 +16,7 @@ For each Mint of `amount` (= L) over [tickLower, tickUpper], the active in-range
 higher by `amount` for every tick in that band. Encoded as net-liquidity deltas (the same
 `liquidityNet` convention the pool stores per tick): +amount at tickLower, -amount at tickUpper.
 Burn is the reverse. Accumulating these into a {tick: net_delta} map and taking the running
-prefix-sum from the left gives the active L at any tick — i.e. the full liquidity curve.
+prefix-sum from the left gives the active L at any tick, i.e. the full liquidity curve.
 
 `slippage()` then walks that curve outward from the current tick using exact V3 swap math
 (within a tick the pool is a CPMM with virtual reserves x = L/sqrtP, y = L*sqrtP; crossing an
@@ -50,7 +50,7 @@ MINT_TOPIC = "0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde
 BURN_TOPIC = "0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c"
 # In BOTH events the indexed topics are [topic0, owner, tickLower, tickUpper]; the
 # non-indexed `amount` (L), amount0, amount1 live in `data`. (sender is also non-indexed,
-# and only present in Mint — leading the data word for Mint.)
+# and only present in Mint: leading the data word for Mint.)
 
 # --- function selectors (verified: first 4 bytes of keccak256 of the signature) ---
 SEL_SLOT0 = "0x3850c7bd"        # slot0() -> (sqrtPriceX96, tick, ...)
@@ -87,7 +87,7 @@ def _i(hexstr: str, start: int, end: int) -> int:
 
 
 def tick_to_sqrt_price(tick: int) -> float:
-    """sqrtP = 1.0001^(tick/2) — the real square-root price (not the X96 fixed-point form)."""
+    """sqrtP = 1.0001^(tick/2), the real square-root price (not the X96 fixed-point form)."""
     return math.pow(1.0001, tick / 2.0)
 
 
@@ -103,7 +103,7 @@ def sqrt_price_to_tick(sqrt_price: float) -> int:
 class TickMap:
     """Reconstructs and queries the per-tick net-liquidity map of a single V3 pool.
 
-    Not a Provider — a standalone on-chain reader with its own endpoint-rotating `_rpc`,
+    Not a Provider: a standalone on-chain reader with its own endpoint-rotating `_rpc`,
     mirroring `bsc_indexer` so it works with the same free public RPCs.
     """
 
@@ -171,7 +171,7 @@ class TickMap:
         t0 = await self._eth_call(pool, SEL_TOKEN0)
         t1 = await self._eth_call(pool, SEL_TOKEN1)
         if not t0 or not t1 or t0 == "0x" or t1 == "0x":
-            raise ValueError(f"{pool} has no token0/token1 — not a V3 pool")
+            raise ValueError(f"{pool} has no token0/token1, not a V3 pool")
         t0 = "0x" + t0[-40:]
         t1 = "0x" + t1[-40:]
         d0 = await self._eth_call(t0, SEL_DECIMALS)
@@ -287,7 +287,7 @@ class TickMap:
         NOTE: the map is bounded by [from_block, to_block]. Liquidity minted before
         from_block (and not burned within the window) is invisible here, so the prefix-sum
         is a *relative* curve over the window unless you anchor it to the live active L from
-        current_state() — which is exactly what slippage() does.
+        current_state(), which is exactly what slippage() does.
         """
         pool = pool.lower()
         await self.pool_meta(pool)
@@ -404,7 +404,7 @@ class TickMap:
                 next_sqrt = tick_to_sqrt_price(next_tick)
 
             if cur_L <= 0:
-                # liquidity gap — jump price to the next boundary without filling, then re-anchor
+                # liquidity gap: jump price to the next boundary without filling, then re-anchor
                 cur_sqrt = next_sqrt
                 if bi < len(boundaries):
                     cur_L += tick_map[next_tick] if direction_up else -tick_map[next_tick]
@@ -424,7 +424,7 @@ class TickMap:
             band_in = abs(band_in)
 
             if band_in >= remaining_raw and band_in > 0:
-                # trade terminates inside this band — solve for the partial target sqrt price
+                # trade terminates inside this band: solve for the partial target sqrt price
                 if direction_up:
                     target_sqrt = cur_sqrt + remaining_raw / cur_L
                     out_amt = cur_L * (1.0 / cur_sqrt - 1.0 / target_sqrt)   # token0 out

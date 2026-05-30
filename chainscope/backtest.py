@@ -1,13 +1,13 @@
 """Turn raw OHLCV into a backtest-ready frame with realistic DEX costs attached.
 
-This does NOT run a backtest — it produces clean, point-in-time price bars plus a
+This does NOT run a backtest: it produces clean, point-in-time price bars plus a
 per-bar round-trip cost floor (fees + slippage + gas), so any strategy built on top
 is costed from the start. Feed the frame into your own WFO engine.
 
 No-lookahead note: each bar's cost uses that bar's own `reserve_usd` when the source
 provides it (Bitquery). Free OHLCV (GeckoTerminal) has no per-bar liquidity, so pass
 `reserve_usd=` (e.g. the pool's current liquidity from `client.pools(...)`); be aware
-that applying *current* depth to *historical* bars is an approximation — flagged, not hidden.
+that applying *current* depth to *historical* bars is an approximation, flagged, not hidden.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ async def backtest_frame(client, chain: str | Chain, pair_address: str, timefram
     """Fetch OHLCV for a pool and attach a per-bar round-trip cost floor.
 
     Adds column `rt_cost_frac`: the fraction of notional lost entering+exiting a
-    `size_usd` position at that bar's liquidity — i.e. the minimum price move a
+    `size_usd` position at that bar's liquidity, i.e. the minimum price move a
     trade must capture just to break even. Returns a pandas DataFrame.
     """
     import pandas as pd  # noqa: F401

@@ -1,4 +1,4 @@
-"""Phase 10: FLOW-BASED SELECTION test — does smart-money / net-buy flow predict WHICH coins pump?
+"""Phase 10: FLOW-BASED SELECTION test, does smart-money / net-buy flow predict WHICH coins pump?
 
 The one hypothesis price-timing can't answer. Joins Bitquery daily flow (buy/sell USD, unique
 buyers) to our daily OHLCV (forward returns). Builds causal selection signals (net-buy pressure,

@@ -1,5 +1,5 @@
 """
-(C) STRATEGY 2 — "AVOID FIRST N DAYS" age filter on the phase9 16-family timing test.
+(C) STRATEGY 2, "AVOID FIRST N DAYS" age filter on the phase9 16-family timing test.
 
 Question: does excising the early launch/bleed window lift OOS PF vs the unfiltered
 baseline AND vs a bar-shuffle null? Run the SAME multi-family per-coin WFO (adapted

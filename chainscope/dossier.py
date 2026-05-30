@@ -1,4 +1,4 @@
-"""Per-coin full dossier — one call assembles everything we can dig on a token:
+"""Per-coin full dossier: one call assembles everything we can dig on a token:
 metadata, every pool, price/volume, recent trades, multi-pool depth + routing,
 a cost/slippage curve by trade size, rug/safety, launch/graduation, MEV exposure,
 and creator. Each section is independent and degrades gracefully, so a partial

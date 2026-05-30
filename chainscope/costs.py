@@ -1,9 +1,9 @@
-"""DEX trade cost model — so backtests are never costless.
+"""DEX trade cost model: so backtests are never costless.
 
 A realistic DEX fill has three cost components:
-  1. swap fee   — the pool's protocol fee (bps of notional)
-  2. price impact — constant-product slippage from finite pool depth
-  3. gas        — fixed per-swap network cost
+  1. swap fee , the pool's protocol fee (bps of notional)
+  2. price impact, constant-product slippage from finite pool depth
+  3. gas      , fixed per-swap network cost
 
 Price impact uses the constant-product (x*y=k) approximation. Given total pool
 liquidity `reserve_usd`, the relevant single-sided reserve is ~reserve_usd/2.
@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from .chains import Chain
 
 # Default swap fee (bps of notional) by DEX-name substring. PancakeSwap/Uniswap v3
-# have multiple tiers; these are the common defaults — override per pool if known.
+# have multiple tiers; these are the common defaults, override per pool if known.
 DEX_FEE_BPS: dict[str, float] = {
     "pancakeswap-v3": 25.0,
     "pancakeswap_v3": 25.0,

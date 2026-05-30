@@ -38,7 +38,7 @@ def summarize(df, label, col):
 
 
 print("=" * 90)
-print("FULL DISTRIBUTION over ALL pool-windows (no selection) — APR (annualized)")
+print("FULL DISTRIBUTION over ALL pool-windows (no selection), APR (annualized)")
 print("=" * 90)
 rows = []
 for df, name in ((full, "full_range"), (conc, "concentrated")):

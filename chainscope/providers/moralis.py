@@ -1,8 +1,8 @@
-"""Moralis — Solana pump.fun launch & graduation event feed (requires MORALIS_API_KEY).
+"""Moralis: Solana pump.fun launch & graduation event feed (requires MORALIS_API_KEY).
 
 Capabilities: launch (single-token bonding status). Solana only.
 Also exposes three direct event-feed helpers the aggregator calls outside the
-base capability set: recent_launches / recent_bonding / recent_graduated — the
+base capability set: recent_launches / recent_bonding / recent_graduated, the
 new/bonding/graduated pump.fun streams that are the actual tradeable signal.
 
 Base: https://solana-gateway.moralis.io  (header X-API-Key)
@@ -161,21 +161,21 @@ class MoralisProvider(Provider):
         return (data or {}).get("result") or []
 
     async def recent_launches(self, chain: Chain, limit: int = 100) -> list[Launch]:
-        """GET /token/mainnet/exchange/pumpfun/new — newly created pump.fun tokens."""
+        """GET /token/mainnet/exchange/pumpfun/new: newly created pump.fun tokens."""
         if Chain.parse(chain) != Chain.SOLANA:
             raise NotSupported
         rows = await self._exchange_feed("new", limit)
         return [self._token_to_launch(t) for t in rows]
 
     async def recent_bonding(self, chain: Chain, limit: int = 100) -> list[Launch]:
-        """GET /token/mainnet/exchange/pumpfun/bonding — tokens mid bonding curve."""
+        """GET /token/mainnet/exchange/pumpfun/bonding, tokens mid bonding curve."""
         if Chain.parse(chain) != Chain.SOLANA:
             raise NotSupported
         rows = await self._exchange_feed("bonding", limit)
         return [self._token_to_launch(t) for t in rows]
 
     async def recent_graduated(self, chain: Chain, limit: int = 100) -> list[Launch]:
-        """GET /token/mainnet/exchange/pumpfun/graduated — graduated tokens (complete=True)."""
+        """GET /token/mainnet/exchange/pumpfun/graduated, graduated tokens (complete=True)."""
         if Chain.parse(chain) != Chain.SOLANA:
             raise NotSupported
         rows = await self._exchange_feed("graduated", limit)

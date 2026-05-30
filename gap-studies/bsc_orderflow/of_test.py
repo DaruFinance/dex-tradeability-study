@@ -160,7 +160,7 @@ trail=piv.rolling(6,min_periods=3).mean()
 sel_r=selection(trail)
 ew=ret1.mean(axis=1).dropna().values
 def cum(r): return float(np.prod(1+r)-1) if len(r) else np.nan
-print('\n=== TEST B SELECTION (long top-flow coin vs equal-weight) — UNDERPOWERED N=5 ===')
+print('\n=== TEST B SELECTION (long top-flow coin vs equal-weight), UNDERPOWERED N=5 ===')
 print('long-top cum net=%.4f  mean=%.5f  n=%d'%(cum(sel_r),np.mean(sel_r) if len(sel_r) else np.nan,len(sel_r)))
 print('equal-weight cum (no cost)=%.4f'%cum(ew))
 # across-coin permutation null: shuffle column labels of the signal

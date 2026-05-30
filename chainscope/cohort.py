@@ -1,4 +1,4 @@
-"""Cohort pipeline — the end-to-end "give me N coins that launched in a window and
+"""Cohort pipeline: the end-to-end "give me N coins that launched in a window and
 pull all their data until today" flow, entirely from our own on-chain digging.
 
   discover_launches  -> scan factory creation events for the window (survivorship-free)
@@ -10,7 +10,7 @@ pull all their data until today" flow, entirely from our own on-chain digging.
 BSC is fully supported on free RPC (throughput-bound for deep windows; a local archive
 node makes 100-coins-x-30-days routine). Solana historical launch discovery needs the
 Old Faithful archive or a getProgramAccounts-capable RPC (the public endpoint can't
-enumerate past launches) — flagged, not faked.
+enumerate past launches), flagged, not faked.
 
 Note: pre-graduation four.meme / pump.fun bonding-curve trades are NOT DEX swaps, so the
 DEX indexer doesn't see them until the token graduates to a real pool. This pipeline
@@ -207,7 +207,7 @@ async def enrich_holders(client, chain: str | Chain | None = None,
                          limit: int | None = None, concurrency: int = 4) -> dict:
     """Compute holder distribution for the pools ALREADY in the store and write a
     `holders` dataset (keyed by pair_address) so the screener's holder_count + top10
-    columns fill in. A separate pass over existing pools — does NOT re-pull trades, so
+    columns fill in. A separate pass over existing pools, does NOT re-pull trades, so
     no double-counting. BSC via Transfer-event reconstruction; Solana via Helius."""
     from .holders_evm import EvmHolders
     from .holders_sol import SolHolders

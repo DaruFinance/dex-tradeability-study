@@ -2,11 +2,11 @@
 backfiller write.
 
 The `ParquetStore` lays every dataset out as
-``{data_dir}/{dataset}/chain=.../dt=.../*.parquet`` — a hive-partitioned tree
+``{data_dir}/{dataset}/chain=.../dt=.../*.parquet``, a hive-partitioned tree
 where ``chain`` and ``dt`` (the event date) are encoded in the directory names.
 This module points DuckDB at each of those trees with ``hive_partitioning=true``
 so the partition columns come back as real, queryable columns, then exposes the
-whole store as a set of SQL views you can run arbitrary queries against::
+whole store as a set of SQL views you can run arbitrary queries against:
 
     from chainscope.query import Query
     q = Query()                       # uses get_settings().data_dir
@@ -23,7 +23,7 @@ methods and straightforward SQL.
 
 The known datasets mirror what `ParquetStore.write` is called with across the
 codebase (backfill / universe / cli): tokens, pools, ohlcv, trades, rug_reports,
-launches, pool_universe — plus a couple of forward-looking names (listings,
+launches, pool_universe, plus a couple of forward-looking names (listings,
 holders) that are registered only if they happen to exist on disk.
 """
 from __future__ import annotations
@@ -176,7 +176,7 @@ class Query:
         return out
 
     # ------------------------------------------------------------------ #
-    # convenience analytics — each is resilient to a missing dataset
+    # convenience analytics: each is resilient to a missing dataset
     # ------------------------------------------------------------------ #
     def _missing(self, *names: str) -> bool:
         return any(n not in self._datasets for n in names)
@@ -280,11 +280,11 @@ class Query:
             "SELECT chain, dt, dex, pair_address, token0, token1, "
             "created_block, created_at, creator "
             f"FROM pool_universe{clause} "
-            "ORDER BY COALESCE(created_at, dt::TIMESTAMP) DESC "
+            "ORDER BY COALESCE(created_at, dt:TIMESTAMP) DESC "
             f"LIMIT {int(limit)}"
         )
         if self.backend == "polars":
-            # polars SQL has no ::TIMESTAMP cast on the dt string; order by created_at only.
+            # polars SQL has no :TIMESTAMP cast on the dt string; order by created_at only.
             q = (
                 "SELECT chain, dt, dex, pair_address, token0, token1, "
                 "created_block, created_at, creator "
@@ -301,7 +301,7 @@ class Query:
         the series from the ``holder_count`` column on `tokens` snapshots (and,
         failing that, `rug_reports`). Empty list if no source carries it.
         """
-        # Dedicated holders dataset (placeholder — register & use if present).
+        # Dedicated holders dataset (placeholder, register & use if present).
         if "holders" in self._datasets:
             where = [f"address = {self._lit(address)}"]
             if chain:

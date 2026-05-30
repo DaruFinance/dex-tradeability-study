@@ -1,7 +1,7 @@
 """Generalized single-chain GT universe+OHLCV puller (run one chain at a time; GT limit is per-IP).
 
 Usage: python3 _research/gt_chain.py <network> <max_pages> <min_age_days> <min_reserve_usd> <tf>
-  network: GT slug — eth | base | bsc | arbitrum | polygon_pos | ...
+  network: GT slug, eth | base | bsc | arbitrum | polygon_pos | ...
 Writes _gt_universe_<network>.jsonl and ohlcv_gt/<network>_<tf>.parquet.
 """
 from __future__ import annotations

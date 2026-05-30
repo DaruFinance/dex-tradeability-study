@@ -3,7 +3,7 @@
 For each coin: ~16 structural long-only strategy FAMILIES (trend/breakout/mean-rev/volatility/
 volume), each with IS-tuned params sampled per WFO window. Proper TP/SL brackets using INTRABAR
 HIGH/LOW (not close-only). Rolling IS/OOS per coin; keep (coin, family) pairs whose pooled OOS
-beats cost. A coin can pass even if its price ended far below launch — we trade the intra-path
+beats cost. A coin can pass even if its price ended far below launch, we trade the intra-path
 peaks, not buy-and-hold.
 
 Unit = (coin, strategy family). ~16 families x 2,300 coins, params sampled per window. Output: the
@@ -164,7 +164,7 @@ def main():
             print(f"  [{ci+1}] coins_with_pass={coins_with_pass} corpus={len(corpus)} ({time.time()-t0:.0f}s)", flush=True)
     C=pd.DataFrame(corpus); A=pd.DataFrame(all_evals)
     print(f"\n=== RESULTS ({n_eval} (coin,family) evaluations, {time.time()-t0:.0f}s) ===")
-    # FULL distribution (all evaluated, not just winners) — the unbiased measure
+    # FULL distribution (all evaluated, not just winners), the unbiased measure
     if len(A):
         apf=A.oos_pf.replace(np.inf,np.nan)
         print(f"ALL {len(A)} evaluated (>= {MIN_OOS_TR} OOS trades):")

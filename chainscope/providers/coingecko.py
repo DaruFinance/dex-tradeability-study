@@ -1,4 +1,4 @@
-"""CoinGecko — exchange-listing presence (CEX + DEX venues) for a token.
+"""CoinGecko: exchange-listing presence (CEX + DEX venues) for a token.
 
 Works keyless at a low rate; a demo or pro key raises the limit. The
 contract-address endpoint resolves a chain+address to a CoinGecko coin and

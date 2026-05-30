@@ -1,4 +1,4 @@
-"""Fully ON-CHAIN Solana core provider — token / pools / rug from pure JSON-RPC.
+"""Fully ON-CHAIN Solana core provider: token / pools / rug from pure JSON-RPC.
 
 This is the no-key, no-third-party-API replacement for the gated DEX/security
 platforms (DexScreener, RugCheck, ...) on Solana. Everything here is read straight
@@ -11,7 +11,7 @@ from a mainnet RPC node:
   rug    <- mint/freeze authorities (null == revoked), getTokenLargestAccounts for
             top-10 concentration, and the deepest pool's LP-mint burn (when present).
 
-Metaplex name/symbol (verified offsets — see METADATA_PROGRAM / _metadata_pda):
+Metaplex name/symbol (verified offsets, see METADATA_PROGRAM / _metadata_pda):
   metadata account = key(1) + update_authority(32) + mint(32) -> name borsh string
   at offset 65 (u32 LE length + utf8), then symbol borsh string, then uri.
   The metadata PDA = findProgramAddress(["metadata", program, mint], program); the
@@ -23,7 +23,7 @@ dataSlice of length 0 (we only need the matched pubkeys, not the account bodies)
 cap the number of pools we hydrate. On a throttled endpoint pools may come back empty;
 token/rug degrade gracefully and never raise.
 
-Docs: https://solana.com/docs/rpc/http/getprogramaccounts ,
+Docs: https://solana.com/docs/rpc/http/getprogramaccounts,
       https://developers.metaplex.com/token-metadata .
 """
 from __future__ import annotations
@@ -528,7 +528,7 @@ class SolanaChainProvider(Provider):
         Only Raydium v4 exposes an SPL LP mint at a fixed offset; PumpSwap has an LP
         mint too but Orca's CLMM has no fungible LP token. We read the deepest pool's
         owning program, grab its LP mint, and compare LP supply against burn addresses
-        is non-trivial on-chain — a fully-burned LP mint typically has supply 0 or its
+        is non-trivial on-chain: a fully-burned LP mint typically has supply 0 or its
         authority revoked. We report supply==0 as fully burned, else None.
         """
         pools = await self.get_pools(chain, mint)

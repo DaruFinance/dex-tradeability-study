@@ -1,4 +1,4 @@
-"""Solana chain indexer — reconstructs the trade tape, OHLCV, and per-trade pool
+"""Solana chain indexer: reconstructs the trade tape, OHLCV, and per-trade pool
 RESERVES directly from raw Solana JSON-RPC. No third-party index, no key.
 
 This is the data the paid platforms charge to serve; here we dig it from the chain.
@@ -17,8 +17,8 @@ Pricing is in USD when the pool is quoted in a known stablecoin (USDC/USDT); for
 SOL-quoted pools price is in SOL (price_native) and USD fields are left None.
 
 Deep history pages by transaction signature (getSignaturesForAddress + `before`),
-unlike the EVM block-range backfiller — fetch_trades_page() exposes that unit for a
-future Solana backfiller. (follow-up — see module note in get_trades.)
+unlike the EVM block-range backfiller: fetch_trades_page() exposes that unit for a
+future Solana backfiller. (follow-up, see module note in get_trades.)
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ PUMPSWAP_LAYOUT = {
     "base_mint": 43, "quote_mint": 75,
     "base_vault": 139, "quote_vault": 171,
 }
-# Orca Whirlpool (docs.rs whirlpools::state::Whirlpool), after 8-byte anchor disc:
+# Orca Whirlpool (docs.rs whirlpools:state:Whirlpool), after 8-byte anchor disc:
 # config pk(32) + bump(1) + tick_spacing u16(2) + tick_spacing_seed(2) + fee_rate u16(2)
 # + protocol_fee_rate u16(2) + liquidity u128(16) + sqrt_price u128(16)
 # + tick_current_index i32(4) + protocol_fee_owed_a/b u64(8+8) -> token_mint_a @101,
@@ -359,7 +359,7 @@ class SolanaIndexerProvider(Provider):
         (returns whatever was decoded so far).
 
         NOTE: the existing block-range Backfiller is EVM-shaped; Solana deep backfill pages
-        by signature via fetch_trades_page() — wiring that into backfill.py is a follow-up.
+        by signature via fetch_trades_page(), wiring that into backfill.py is a follow-up.
         """
         if Chain.parse(chain) != Chain.SOLANA:
             raise NotSupported
@@ -410,7 +410,7 @@ class SolanaIndexerProvider(Provider):
         """Decode one signature page of trades for `pool`, oldest-first paging unit.
 
         Returns (trades_newest_first, oldest_signature_in_page). Pass the returned
-        oldest signature back as `before_sig` to walk deeper history — the unit a
+        oldest signature back as `before_sig` to walk deeper history, the unit a
         future Solana backfiller drives (signature-based, not block-range)."""
         meta = await self._pool_meta(pool)
         page = await self._signatures(pool, limit, before=before_sig)

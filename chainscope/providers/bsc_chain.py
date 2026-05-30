@@ -1,4 +1,4 @@
-"""Fully on-chain BNB Smart Chain provider — token metadata, pools, and token-safety
+"""Fully on-chain BNB Smart Chain provider: token metadata, pools, and token-safety
 read entirely from a BSC node via eth_call + eth_getLogs. No third-party data API.
 
 This replaces the gated platforms (DexScreener / GeckoTerminal / GoPlus / Honeypot.is)
@@ -10,7 +10,7 @@ How each capability is served:
   - token : ERC-20 views (name/symbol/decimals/totalSupply) + price/mcap/liquidity from
             the token's deepest discovered pool's reserves.
   - pools : discovered from factory creation logs (PancakeSwap V2 PairCreated,
-            V3 PoolCreated) — every pool that holds the token, dead or alive.
+            V3 PoolCreated), every pool that holds the token, dead or alive.
   - rug   : owner()/renounce, LP burned/locked (LP-token balances at dead/locker
             addresses), and honeypot + buy/sell tax via an eth_call swap SIMULATION
             with STATE OVERRIDE (the technique honeypot.is uses internally).
@@ -61,11 +61,11 @@ V3_FACTORY = "0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865"
 V2_ROUTER = "0x10ed43c718714eb63d5aa57b78b54704e256024e"
 WBNB = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 
-# Event topic0 (keccak256 of the event signature) — recomputed + BscScan-verified.
+# Event topic0 (keccak256 of the event signature), recomputed + BscScan-verified.
 PAIR_CREATED_TOPIC = "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9"
 POOL_CREATED_TOPIC = "0x783cca1c0412dd0d695e784568c96da2e9c22ff989357a2e8b1d9b2b4e6b7118"
 
-# Known USD stablecoins on BSC (lowercased) — pools quoted in these price directly in USD.
+# Known USD stablecoins on BSC (lowercased), pools quoted in these price directly in USD.
 STABLES = {
     "0x55d398326f99059ff775485246999027b3197955",  # USDT
     "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d",  # USDC
@@ -251,7 +251,7 @@ class _SimAsm:
              bought, 0, [token, WBNB], self, MAX_DEADLINE)      # sell: token -> WBNB
          wbnb_back = WBNB.balanceOf(self) - wbnb_before         # realized WBNB (post sell-tax)
       5. return abi.encode(bought, wbnb_back)
-    We sell to WBNB (not BNB) so the result is a plain ERC-20 balance delta — this avoids the
+    We sell to WBNB (not BNB) so the result is a plain ERC-20 balance delta, this avoids the
     router's WETH.withdraw()->safeTransferETH unwrap, whose BNB credit is not reliably visible
     to SELFBALANCE inside an eth_call frame. The fee-on-transfer-supporting variant handles
     taxed tokens (the non-FOT variant reverts on them). Any sub-call revert bubbles up; the
@@ -492,7 +492,7 @@ def _enc_addr_word(addr_hex: str) -> str:
 
 
 class BscChainProvider(Provider):
-    """Pure-RPC BSC provider. eth_call + eth_getLogs only — no third-party data API."""
+    """Pure-RPC BSC provider. eth_call + eth_getLogs only, no third-party data API."""
 
     name = "bsc_chain"
     supported_chains = frozenset({Chain.BSC})
@@ -1017,7 +1017,7 @@ class BscChainProvider(Provider):
         The simulator buys, measures balance, approves the router, sells to WBNB, and
         RETURNS (tokensBought, wbnbBack). If the whole call reverts we localize the trap
         with a buy-only probe: buy-revert => untradeable/anti-bot; buy-ok+sell-revert =>
-        classic sell trap. All via eth_call — nothing is broadcast.
+        classic sell trap. All via eth_call, nothing is broadcast.
 
         Fallback: if the RPC rejects code override, we fall back to a spot WBNB->token->WBNB
         getAmountsOut round-trip (fees+tax combined, can't separate buy/sell)."""
@@ -1026,7 +1026,7 @@ class BscChainProvider(Provider):
         exp_buy = await self._get_amounts_out(SIM_BUY_BNB_WEI, [WBNB, token])
         if not exp_buy or len(exp_buy) < 2 or exp_buy[-1] == 0:
             return {"is_honeypot": None, "buy_tax": None, "sell_tax": None,
-                    "note": "no WBNB route — tax/honeypot not simulable"}
+                    "note": "no WBNB route, tax/honeypot not simulable"}
         expected_tokens = exp_buy[-1]
 
         sim = await self._run_sim_contract(token, sell=True)
@@ -1036,7 +1036,7 @@ class BscChainProvider(Provider):
             wbnb_back = exp_sell[-1] if (exp_sell and len(exp_sell) >= 2) else 0
             return self._round_trip_tax(
                 SIM_BUY_BNB_WEI, wbnb_back,
-                note="code-override not honored — tax via spot round-trip")
+                note="code-override not honored, tax via spot round-trip")
 
         if sim.get("reverted"):
             # The full buy+sell reverted. Probe a buy-only sim to localize the trap:

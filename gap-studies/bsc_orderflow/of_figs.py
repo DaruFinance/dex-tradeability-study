@@ -38,7 +38,7 @@ ax.hist(na.pf.clip(0,1.2),bins=bins,density=True,alpha=.5,label='NULL (50 shuffl
 ax.hist(ra.pf.clip(0,1.2),bins=bins,density=True,alpha=.6,label='REAL',color='#2c7fb8')
 ax.axvline(1.0,color='r',ls='--',lw=1,label='breakeven PF=1')
 ax.set_xlabel('OOS profit factor (costed)');ax.set_ylabel('density')
-ax.set_title('TEST A: costed PF distribution — both pile up <<1\n(median PF=0 real & null; cost dominates micro-edge)')
+ax.set_title('TEST A: costed PF distribution, both pile up <<1\n(median PF=0 real & null; cost dominates micro-edge)')
 ax.legend();fig.tight_layout();fig.savefig(D+'figs/fig3_pf_dist.pdf')
 
 # Fig 4: TEST B selection real vs null cum return distribution

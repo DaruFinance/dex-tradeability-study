@@ -1,4 +1,4 @@
-"""GeckoTerminal — free, no API key (~30 req/min, rate limited by HttpClient).
+"""GeckoTerminal: free, no API key (~30 req/min, rate limited by HttpClient).
 
 Capabilities: search, token, pools, ohlcv, new_pairs.
 Covers both Solana and BSC. Adds OHLCV on top of the DexScreener baseline.

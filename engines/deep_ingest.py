@@ -1,7 +1,7 @@
 """Path B ingest: ESTABLISHED (month+ old) DEX coins with their RECENT tape, archive-backed.
 
 Discovers PairCreated launches in an OLDER window (coins are month+ old), then for each:
-  1. cheap LIVENESS PROBE — pull only the last ~1 day; if no swaps, the coin is dead/illiquid
+  1. cheap LIVENESS PROBE, pull only the last ~1 day; if no swaps, the coin is dead/illiquid
      now -> record it (survivorship!) and SKIP the expensive full pull.
   2. if alive -> pull the recent N-day tape (Sync+Swap, per-bar reserves) + holders -> store.
 

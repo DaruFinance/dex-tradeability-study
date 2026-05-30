@@ -1,4 +1,4 @@
-"""Birdeye — deep historical price/trade source for backtests. Requires BIRDEYE_API_KEY.
+"""Birdeye: deep historical price/trade source for backtests. Requires BIRDEYE_API_KEY.
 
 Capabilities: token, ohlcv, trades, rug. Covers Solana and BSC.
 

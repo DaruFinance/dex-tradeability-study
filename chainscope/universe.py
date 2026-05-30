@@ -1,4 +1,4 @@
-"""Historical, survivorship-free TOKEN/POOL UNIVERSE builder — entirely on-chain.
+"""Historical, survivorship-free TOKEN/POOL UNIVERSE builder, entirely on-chain.
 
 The single most important fix for survivorship bias in a DEX backtest is to know
 *every* pool that ever existed, including the ones that are now dead, rugged, or
@@ -12,14 +12,14 @@ survival. This module digs the universe straight from the chain instead:
     to the factory's deploy block (limited only by how deep the RPC will serve).
 
   - Solana: ``getProgramAccounts`` snapshots each AMM program's pool accounts.
-    A snapshot is point-in-time *current* — it lists pools that still have an
+    A snapshot is point-in-time *current*: it lists pools that still have an
     account on-chain. For the truly survivorship-free *historical* set you must
     replay program creates from an archive (Old Faithful / a local validator
     ledger); a live snapshot is the best a public RPC will give and is noted as
     such on every record (``created_at=None``).
 
 This is a ``UniverseBuilder`` (NOT a Provider): it doesn't fit the per-token
-Provider capability model — it scans the whole chain, not one address. RPC only;
+Provider capability model: it scans the whole chain, not one address. RPC only;
 no third-party API, no API key.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ from .storage import ParquetStore
 log = logging.getLogger("chainscope.universe")
 
 # ---------------------------------------------------------------------------
-# BSC factories + event topic0 hashes — VERIFIED (see module REPORT / sources).
+# BSC factories + event topic0 hashes: VERIFIED (see module REPORT / sources).
 # Topic hashes are keccak256 of the event signature; each was confirmed both by
 # local keccak256 and against real on-chain logs on BNB Smart Chain.
 # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ BSC_MAX_CHUNKS = 3000
 
 # ---------------------------------------------------------------------------
 # Solana AMM programs + pool-account layouts (offsets are the base/quote MINT
-# pubkeys, taken from each program's SDK/IDL — same constants the indexer uses).
+# pubkeys, taken from each program's SDK/IDL, same constants the indexer uses).
 # ---------------------------------------------------------------------------
 RAYDIUM_AMM_V4 = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
 PUMPSWAP_AMM = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA"
@@ -97,7 +97,7 @@ DEX_FOR_FACTORY = {
     FOURMEME_FACTORY.lower(): "fourmeme",
 }
 
-# base58 (Bitcoin/Solana alphabet) — needed to encode mint pubkeys from raw bytes.
+# base58 (Bitcoin/Solana alphabet), needed to encode mint pubkeys from raw bytes.
 _B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
@@ -206,7 +206,7 @@ class UniverseBuilder:
                                 from_b: int, to_b: int) -> list[dict]:
         """Chunked eth_getLogs over [from_b, to_b] for one factory+topic, no token
         filter. Returns logs sorted by (block, logIndex). Loud truncation note if
-        the range exceeds BSC_MAX_CHUNKS — never a silent cap."""
+        the range exceeds BSC_MAX_CHUNKS: never a silent cap."""
         out: list[dict] = []
         b = from_b
         chunks = 0
@@ -335,7 +335,7 @@ class UniverseBuilder:
 
         We use a dataSlice that spans both mint offsets so we transfer only the
         bytes we decode (the full Raydium state is 752B/account; a snapshot of all
-        of them is huge — public RPCs routinely reject the unsliced call). A
+        of them is huge: public RPCs routinely reject the unsliced call). A
         `dataSize` memcmp filter (where known) restricts to the pool-state account
         type. Returns [] (with a logged note) if the public RPC refuses the call.
         """
@@ -396,7 +396,7 @@ class UniverseBuilder:
         """CURRENT snapshot of all live pool accounts across the given AMM programs
         via getProgramAccounts, decoding base/quote mints at the known offsets.
 
-        NOTE on survivorship: this is a *current* snapshot — it sees pools that
+        NOTE on survivorship: this is a *current* snapshot, it sees pools that
         still have an on-chain account. It will NOT include pools whose accounts
         were closed. created_at is None because a snapshot carries no creation
         slot. For the true survivorship-free *historical* set you must replay each

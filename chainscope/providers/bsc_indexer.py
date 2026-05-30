@@ -1,4 +1,4 @@
-"""BSC chain indexer — reconstructs the trade tape, OHLCV, and per-block LIQUIDITY
+"""BSC chain indexer: reconstructs the trade tape, OHLCV, and per-block LIQUIDITY
 directly from raw PancakeSwap-V2 logs via eth_getLogs. No third-party index, no key.
 
 This is the data the paid platforms charge to serve; here we dig it from the chain:
@@ -14,7 +14,7 @@ otherwise price is in the quote token (native) and USD fields are left None.
 Handles BOTH PancakeSwap V2 (Sync/Swap; reserves = real token balances) and V3
 (concentrated liquidity: price from sqrtPriceX96, local depth from per-swap virtual
 reserves L/sqrtP and L*sqrtP). The pool version is auto-detected via fee().
-Note: V3 reserve_usd is a *local* (in-tick) depth proxy — exact for trades that
+Note: V3 reserve_usd is a *local* (in-tick) depth proxy, exact for trades that
 don't cross ticks; very large trades would walk multiple ticks (not modeled).
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ SWAP_V3_TOPIC = "0x19b47279256b2a23a1665c810c8d55a1758940ee09377d4f8d26497a3577d
 SEL_TOKEN0 = "0x0dfe1681"
 SEL_TOKEN1 = "0xd21220a7"
 SEL_DECIMALS = "0x313ce567"
-SEL_FEE = "0xddca3f43"      # fee() — present on V3 pools (uint24, units of 1e-6), absent on V2
+SEL_FEE = "0xddca3f43"      # fee(), present on V3 pools (uint24, units of 1e-6), absent on V2
 
 STABLES = {
     "0x55d398326f99059ff775485246999027b3197955",  # USDT (BSC)
@@ -110,7 +110,7 @@ class BscIndexerProvider(Provider):
         return await self._latest_block()
 
     async def finalized_head(self) -> int:
-        """Finalized block number — the reorg-safe end for a historical backfill
+        """Finalized block number: the reorg-safe end for a historical backfill
         (recent blocks can revert; the historical set should use finalized only)."""
         try:
             b = await self._rpc("eth_getBlockByNumber", ["finalized", False])
@@ -121,7 +121,7 @@ class BscIndexerProvider(Provider):
         return max(1, await self._latest_block() - 15)  # fallback: lag head ~15 blocks
 
     async def enrich_gas(self, trades: list[Trade], limit: int | None = None) -> list[Trade]:
-        """Populate exact gas_native (BNB paid) per trade from tx receipts — one RPC call
+        """Populate exact gas_native (BNB paid) per trade from tx receipts, one RPC call
         per unique tx. Off the hot path; call only when you need real historical gas
         (otherwise the cost model uses a modeled estimate)."""
         cache: dict[str, float] = {}
@@ -274,7 +274,7 @@ class BscIndexerProvider(Provider):
 
     @staticmethod
     def _decode_swap_v3(data: str) -> tuple[int, int, int, int, int]:
-        """V3 Swap(amount0,amount1,sqrtPriceX96,liquidity,tick) — raw (un-scaled) ints."""
+        """V3 Swap(amount0,amount1,sqrtPriceX96,liquidity,tick), raw (un-scaled) ints."""
         d = data[2:]
         return (_i(d, 0, 64), _i(d, 64, 128),     # amount0, amount1 (signed, pool's perspective)
                 _u(d, 128, 192), _u(d, 192, 256),  # sqrtPriceX96, liquidity
@@ -319,7 +319,7 @@ class BscIndexerProvider(Provider):
     def _build_trades(self, pair_address: str, meta: dict,
                       sync: list[dict], swaps: list[dict]) -> list[Trade]:
         if not swaps:
-            return []  # likely a V3 pool (no V2 Swap events) — not decoded yet
+            return []  # likely a V3 pool (no V2 Swap events), not decoded yet
         # reserve_usd at each block from the nearest preceding Sync
         reserve_by_block = []
         for lg in sync:
@@ -416,7 +416,7 @@ class BscIndexerProvider(Provider):
         return (await self.fetch_trades_range(pair_address, from_b, to_b))[:limit]
 
     async def fetch_trades_range(self, pair_address: str, from_b: int, to_b: int) -> list[Trade]:
-        """Decode all trades in a block range — the unit the backfill engine drives.
+        """Decode all trades in a block range: the unit the backfill engine drives.
         Branches on the pool version detected in _token_meta (V2 Sync/Swap vs V3 Swap)."""
         meta = await self._token_meta(pair_address)
         await self._clock_calibrate()

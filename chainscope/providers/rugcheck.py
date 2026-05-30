@@ -1,4 +1,4 @@
-"""RugCheck.xyz — free, no API key. Solana-only token-safety report.
+"""RugCheck.xyz, free, no API key. Solana-only token-safety report.
 
 Capabilities: rug. Solana only.
 score_normalised is 0-100 (higher = riskier). Authorities are null when revoked.
