@@ -1,0 +1,16 @@
+# Data — not distributed with this repository
+data/
+*.parquet
+*.csv
+
+# Build / cache artifacts
+__pycache__/
+*.pyc
+*.pdf
+*.log
+*.aux
+
+# Secrets / local config
+.env
+*.key
+credentials

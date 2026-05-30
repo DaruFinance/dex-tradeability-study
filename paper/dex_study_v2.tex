@@ -1,0 +1,598 @@
+\documentclass[12pt]{article}
+% - page geometry matched to the reference (A4, ~1.25in left / 1.15in right / 1in top-bottom) -
+\usepackage[a4paper,left=1.25in,right=1.15in,top=1in,bottom=1in]{geometry}
+% - Times New Roman text + matching math, to mirror the reference's typeface -
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx} % Times New Roman text + matching math (mirrors the reference typeface)
+\usepackage{graphicx,booktabs,amsmath,amssymb,caption,subcaption,microtype,longtable}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{authblk}
+% - original five-study figures -
+\graphicspath{%
+  {../statistical_survivorship/figs/}{../scalp_intraday/figs/}{../swing_trend/figs/}%
+  {../cross_sectional/figs/}{../cross_chain_micro/figs/}%
+  % - extended-study figures -
+  {../../_gaps/intrabar-tpsl-bracket/figs/}{../../_gaps/is-noise-fitting/figs/}%
+  {../../_gaps/cost_depth_sensitivity/figs/}{../../_gaps/beta_hedge_dex_basket/figs/}%
+  {../../_gaps/launch-cohort/figs/}{../../_gaps/lp_market_making/figs/}%
+  {../../_gaps/multipool_dispersion/figs/}{../../_gaps/btc_regime_timing/figs/}%
+  {../../_gaps/portfolio-of-marginal-streams/figs/}{../../_gaps/bsc_orderflow/figs/}%
+  {../../_gaps/bitquery-count-flow/figs/}{../../_gaps/meta-xsec-selection/figs/}%
+  {../../_gaps/ml_xsec_ranker/figs/}{../../_gaps/holder-mev-deadpool-feasibility/figs/}%
+}
+\captionsetup{font=small,labelfont=bf}
+\renewcommand{\topfraction}{0.92}\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}\setcounter{totalnumber}{4}
+\newcommand{\real}{\textsc{real}}
+\newcommand{\nul}{\textsc{null}}
+\newcommand{\bp}{\,\text{bp}}
+\title{\bf No Edge Without Information:\\[2pt] An Empirical Study of Tradeability in\\ Decentralized-Exchange-Only Cryptocurrencies\\[6pt]
+\large\normalfont Extended edition: robustness, alternative-channel, and machine-learning selection studies}
+\author[1]{Daniel Gatto}
+\affil[1]{Independent Researcher, \texttt{daru.finance}}
+\date{May 2026 (v2)}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+\noindent This paper makes a single argument: in decentralized-exchange (DEX) markets of small, mostly non-CEX-listed tokens, a long-only, realistically-costed trader has \emph{no edge that price information can supply}; the only structure that survives a null is non-price and merely predicts which tokens crash; and the binding obstacle to finding more is survivorship, not method. On a \textbf{survivorship-aware corpus of 4{,}990 DEX pairs across 27 blockchains} reconstructed from on-chain-derived OHLCV, we assemble the case in five movements, every claim benchmarked against a \emph{bar-shuffled null} and reported over the \emph{full distribution} of outcomes rather than cherry-picked winners. \textbf{(i)~Price-based timing has no edge} at any horizon (intraday, swing, cross-sectional, cross-chain): real data performs strictly \emph{worse} than its own shuffle, because the return process is negative-drift, fat-tailed (Hill $\alpha\!\approx\!1.3$--$1.5$), volatility-clustered, and \emph{anti}-momentum, structure that is adverse to longs. \textbf{(ii)~That negative is structural, not methodological}: it survives the intrabar exit convention ($\leq$23\bp/trade), stricter walk-forward selection, and cost mis-specification (the median strategy loses even at zero cost). \textbf{(iii)~The strategies practitioners actually use fail too}, net of cost (market-neutral hedging, launch timing, liquidity provision, cross-pool arbitrage, regime conditioning, portfolio aggregation, and order flow); several apparent ``edges'' are a \emph{cost-on-persistence} artifact of the shuffle, not alpha. \textbf{(iv)~The one signal that beats its null} is a cross-sectional machine-learning ranker on time-varying causal features (out-of-sample rank-IC $+0.079$ vs.\ $+0.004$, real $>$ null in 18/18 configurations), but its skill is \emph{crash avoidance, not return-seeking}: every predicted decile has negative median forward return. \textbf{(v)~Survivorship, not method, is the dominant uncontrolled threat} to every cross-sectional result, and we show a point-in-time, dead-pool-inclusive universe is reconstructable on free infrastructure (at least 9.2\% of currently-live pools are already dead). The five movements converge on one conclusion: \emph{no edge without information}, specifically non-price information on a survivorship-free panel.
+
+\smallskip\noindent\textbf{Keywords:} decentralized exchange, market microstructure, market efficiency, transaction costs, fat tails, momentum, survivorship bias, cross-sectional learning, backtest overfitting, cryptocurrency.
+\end{abstract}
+
+\tableofcontents
+\bigskip
+
+\section{Introduction}
+Decentralized exchanges (DEXs) now host hundreds of thousands of tokens that never reach a centralized venue. These ``DEX-only'' assets (typically small, young, and memecoin-like) are the part of the crypto market least exposed to professional high-frequency competition, and are therefore a natural place to ask whether an ordinary retail participant can extract systematic profit. Two features make the question sharp and distinctive relative to the classical equities or even centralized-crypto setting. First, on an automated market maker (AMM) there is \emph{no native short}: every directional strategy is a long position opened and closed by swapping tokens, so edge cannot come from the short side. Second, the per-trade cost is large and \emph{endogenous} to position size, swap fee plus constant-product slippage plus gas, routinely $150$--$450$ basis points round-trip, an order of magnitude above liquid equity or major-pair crypto costs \cite{makarov2020,barbon2023}. A long-only, expensively-traded market built on assets that mostly decline is an unusually hostile environment, and a clean stress test of weak-form market efficiency \cite{fama1970,fama1965} at the microcap frontier.
+
+\paragraph{Related work.} Our work sits at the intersection of three literatures. The \emph{stylized facts} of asset returns (heavy tails, volatility clustering, near-zero linear autocorrelation \cite{mandelbrot1963,cont2001,engle1982}) we revisit in an extreme form. The \emph{predictability} literature (momentum \cite{jegadeesh1993}, the random-walk/variance-ratio tests \cite{lo1988}) supplies the strategy families and diagnostics we evaluate. And the \emph{data-snooping} literature (the reality check and its bootstrap, the deflated Sharpe ratio, and the multiple-testing critique of cross-sectional ``factors'' \cite{white2000,sullivan1999,bailey2014,harvey2016}) motivates our central methodological choice, the null control. On the asset class itself, prior work documents crypto returns and risks \cite{liu2021} and DEX/AMM microstructure, liquidity quality and the cost of providing liquidity \cite{makarov2020,lehar2021,barbon2023,capponi2021,milionis2022}; we extend this to the long tail of DEX-only tokens and to the question of net-of-cost retail tradeability specifically.
+
+\paragraph{Thesis.} The paper advances one claim and organizes everything else as evidence for it: \emph{in this market an exploitable edge cannot be built from price information alone}. Price-based timing fails (Part~\ref{part:timing}), and the failure is structural rather than methodological (Part~\ref{part:robust}); the non-timing strategies a practitioner would reach for next fail too (Part~\ref{part:alt}); the only signal that beats a null is non-price and predicts crashes rather than gains (Part~\ref{part:ml}); and the one input that could overturn the verdict, a survivorship-free and information-rich panel, is also the dominant uncontrolled threat to every result we report (Part~\ref{part:surv}). Read together, the five movements are not five papers but one argument: \emph{no edge without information}. The contributions below are the load-bearing pieces of that argument.
+
+\paragraph{Contributions.} (i) We build and document a broad, survivorship-aware, multi-chain corpus of DEX-only OHLCV (Section~\ref{sec:data}). (ii) We adopt a methodology centred on a \emph{bar-shuffled null control} and full-distribution reporting (Section~\ref{sec:method}) that, we show, is essential: naive backtests in this market routinely produce ``profitable'' strategies that are in fact \emph{worse than noise}. (iii) Through five studies (Part~\ref{part:timing}) we establish that long-only price-based timing edge is absent at every horizon, and we give the mechanism, a statistical decomposition of \emph{why} real data underperforms its own shuffle. (iv) Through a three-study \emph{robustness battery} (Part~\ref{part:robust}) we close the methodological objections to that negative: the intrabar exit convention, the in-sample selection procedure, and the cost model cannot rescue an edge. (v) Through a seven-study \emph{alternative-channel battery} (Part~\ref{part:alt}) we test the strategies practitioners actually deploy (market-neutral hedging, launch timing, liquidity provision, arbitrage, regime conditioning, portfolio aggregation, order flow) and find none beats a null net of cost; we identify the recurring ``real-beats-null'' pattern in several of them as a cost-on-persistence artifact, not alpha. (vi) We report the \emph{one} positive result, a cross-sectional machine-learning ranker that beats its null (Part~\ref{part:ml}), and dissect its skill as crash-avoidance rather than return-seeking. (vii) We elevate \emph{survivorship} from caveat to first-order finding (Part~\ref{part:surv}), quantify a lower bound on it, and show a corrected universe is buildable. Section~\ref{sec:disc} synthesizes; the agreement across analyses run from independent angles is the central evidence.
+
+\section{Data}\label{sec:data}
+The corpus comprises \textbf{4{,}990 distinct DEX pairs across 27 chains} (Ethereum, Solana, BSC, Base, Arbitrum, Polygon, Avalanche, Sui, Tron, Optimism, HyperEVM, Pulsechain, TON, Abstract, Sonic, zkSync, Linea, Berachain, Unichain, Mantle, Scroll, Blast, Ronin, Fantom, Aptos, Mode, Sei), each with daily OHLCV (up to $\sim$181 bars, $\sim$6 months) and, for $\sim$4{,}662 pairs, hourly OHLCV (up to $\sim$1{,}000 bars, $\sim$42 days). Bars carry open/high/low/close and USD volume; pool-level metadata (USD reserve, pool age, DEX, base-token address) is joined per pair. The OHLCV is reconstructed from on-chain DEX activity (aggregated by an indexing layer) rather than from any single venue's feed, and is denominated in USD. Pairs were discovered from currently-live pool listings across the 27 networks and filtered to a tradeable-liquidity floor (reserve $\geq\$5$k); individual studies apply a minimum-bar gate ($\geq$120 daily or $\geq$360 hourly bars), yielding usable subsets of $\sim$3{,}200--4{,}700 coins. Table~\ref{tab:perchain} reports per-chain coverage and summary statistics.
+
+\paragraph{Auxiliary data.} The extended studies additionally use: per-swap trade tapes (buy/sell direction, wallet, USD) for a BSC subset, used to construct order-flow features (Section~\ref{sec:flow}); a server-side daily flow aggregate (buy/sell USD, unique-trader and transaction counts) for 224 tokens (Section~\ref{sec:flow}); on-chain BTC and ETH USD reference series extracted from the deepest wrapped-major pools in the corpus itself, used for beta hedging and regime conditioning (Sections~\ref{sec:hedge},~\ref{sec:regime}); and bounded on-chain probes of holder concentration, intra-block trade density, and pool-reserve decay used for the feasibility study of Part~\ref{part:surv}.
+
+\paragraph{Survivorship.} Because discovery is sourced from live pools, the universe is \emph{survivor-tilted}: tokens that died and were delisted before sampling are under-represented. We treat this as a first-order issue throughout, in Part~\ref{part:timing} as a caveat that makes the negative timing results \emph{conservative} (the surviving panel still contains the structural losers: 73\% of coins are net negative and $\sim$32\% end more than 50\% below their own peak, so survivorship inflates buy-and-hold but cannot manufacture a \emph{timing} edge), and in Parts~\ref{part:alt}--\ref{part:surv} as the \emph{dominant uncontrolled threat} to every cross-sectional and buy-and-hold result, which we quantify and address directly (Part~\ref{part:surv}). A data-hygiene point that recurs: Solana, Tron, TON and Aptos pool addresses are base58/mixed-case and silently fail to join if lowercased (as EVM hex addresses safely can be); we preserve case for these chains.
+
+\section{Methodology}\label{sec:method}
+Every study obeys the same rules, which we state once and do not repeat.
+
+\paragraph{Long-only, fully costed.} All directional strategies are long-only (open by swapping the quote asset into the token, close by swapping back). Each fill pays a round-trip cost
+\begin{equation}
+c \;=\; \underbrace{2f}_{\text{fee}} \;+\; \underbrace{2\,\frac{s}{R/2}}_{\text{constant-product slippage}} \;+\; \underbrace{\frac{2g}{s}}_{\text{gas}},
+\label{eq:cost}
+\end{equation}
+where $f$ is the pool fee, $R$ the USD reserve (single-sided depth $\approx R/2$), $s$ the position size, and $g$ per-swap gas in USD (chain-specific native-token price). We size $s=\max(\$50,\,0.25\%\,R)$. Two regimes follow from \eqref{eq:cost}: at small size gas dominates ($2g/s$), at large size slippage dominates ($\propto s/R$); the per-coin cost is U-shaped in $s$ with a minimum near our sizing. The resulting median round-trip cost is $\approx$\,164\bp{} (Ethereum higher, $\approx$223\bp, gas-driven; Table~\ref{tab:perchain}). Cost is charged on both legs of every trade; net return $=$ gross $-\,c$. Where a study leaves the spot market, the CEX-perp hedge (Section~\ref{sec:hedge}) and the liquidity-provision study (Section~\ref{sec:lp}), it states its additional cost terms (perp taker fee and funding; impermanent loss / loss-versus-rebalancing and pool gas) explicitly.
+
+\paragraph{Causal, walk-forward.} Every signal at bar $i$ uses only information through bar $i-1$ (an explicit one-bar shift). Take-profit/stop-loss and trailing exits use \emph{intrabar} high/low (a long stop is hit when $\text{low}\leq\text{stop}$, a target when $\text{high}\geq\text{TP}$; if both touch in a bar, the stop is assumed first, the conservative choice, whose effect we bound in Section~\ref{sec:bracket}). Walk-forward windows are disjoint and forward: parameters are selected in-sample (IS) by profit factor over a fixed number of random parameter draws per window, then evaluated out-of-sample (OOS) only. Daily studies use IS$=$90 / OOS$=$45 bars; hourly studies IS$=$240 / OOS$=$120 bars.
+
+\paragraph{The null control.} For any edge claim we run the \emph{identical} pipeline on a bar-shuffled surrogate: each coin's bars are permuted together (preserving each bar's internal OHLC consistency and the coin's marginal return distribution, destroying temporal order). For autocorrelation diagnostics we permute \emph{returns} rather than price levels (permuting levels then differencing induces a spurious $-0.5$ AR(1)). For \emph{cross-sectional selection} studies the appropriate null permutes the signal \emph{across coins} each rebalance (destroying the signal$\to$coin link while preserving the panel of forward returns). A strategy possesses real structure only if it materially \emph{beats its null}. We also use \emph{block} shuffles (block length 5, 20) and a \emph{drift-zeroed} surrogate to decompose \emph{which} structure matters (Section~\ref{sec:stat}). A caution that the extended studies make precise (Section~\ref{sec:bracket},~\ref{sec:hedge}): on these thin, fat-tailed coins the bar-shuffle is \emph{not} a neutral baseline for long-only \emph{timing}: it removes the adverse downward autocorrelation that punishes longs, and it preserves inflated intrabar ranges that brackets harvest out of sequence, so a shuffled null can look spuriously \emph{profitable}. The correct reading is always the \emph{direction and size} of the real-vs-null gap relative to a no-skill baseline (buy-and-hold or equal-weight), never the gap's mere existence.
+
+\paragraph{Full-distribution reporting.} Because returns are extremely fat-tailed (Section~\ref{sec:stat}), means are dominated by rare moonshots and ``best-strategy'' statistics are pure selection bias. We report medians, trimmed means, bootstrap confidence intervals where a Sharpe-type quantity is involved, and the full distribution of per-strategy outcomes (median OOS profit factor (PF), mean net-return-per-trade, and the fraction of strategies with PF$>$1) never a hand-picked winner. The fraction-PF$>$1 metric is deliberately a low bar; its value is comparative (real vs.\ null). All runs are seeded and reproduce identically across reruns.
+
+% =====================================================================
+\part{The Price-Timing Verdict}\label{part:timing}
+% =====================================================================
+
+\noindent The thesis begins here, with its largest claim: price-based \emph{timing} has no edge. Five analyses attack that claim from independent angles, starting with the return process itself (which supplies the mechanism for everything that follows), then intraday, swing, cross-sectional, and cross-chain. They agree.
+
+\section{The Return-Generating Process}\label{sec:stat}
+We first characterize the data itself; this supplies the mechanism behind every later result. ($N=4{,}089$ daily coins / $681$k bars; $3{,}982$ hourly / $3.0$M bars.)
+
+\paragraph{Distribution and tails.} Pooled daily log-returns have mean $-0.00193$ and a \emph{more negative} median ($-0.00039$): a left-of-zero mass with a thin moonshot right tail. $73.4\%$ of coins have negative bar-over-bar drift; pooled skew is $-0.95$ and excess kurtosis $556$ (Fig.~\ref{fig:retdist}). The tails are heavier than any finite-variance law: Hill estimates give $\alpha\approx1.5$ (down) and $1.3$ (up) on daily data and $\approx1.2$--$1.3$ on hourly, $\alpha<2$ is the \emph{infinite-theoretical-variance} regime, and five-sigma moves occur $\sim$4{,}566$\times$ more often than under a Gaussian (Fig.~\ref{fig:tails}, Table~\ref{tab:stat}). This is the classical fat-tail stylized fact \cite{mandelbrot1963,cont2001} in extreme form, and is exactly why naive mean-based backtests in this market mislead.
+
+\paragraph{Survival.} Median total return is $-18.5\%$, $73\%$ of coins are net losers, the median maximum drawdown from peak is $-46.2\%$, and the median coin ends $-38.3\%$ below its own peak with $\sim$32\% ending more than $50\%$ down (Fig.~\ref{fig:survival}). The market is a graveyard with a few lottery winners: the mean total return is positive ($+1.57$) purely because of them.
+
+\paragraph{Temporal structure, anti-momentum.} Daily returns are \emph{negatively} autocorrelated (lag-1 ACF $\approx-0.16$) and the variance ratio $VR(5)=0.69<1$: prices mean-revert faster than a random walk (Fig.~\ref{fig:temporal}), the opposite of the positive autocorrelation a trend follower needs \cite{lo1988,jegadeesh1993}. Absolute returns are positively autocorrelated (lag-1 $+0.21$): volatility clusters \cite{engle1982}. Down-runs are longer than up-runs, and the mean next-bar return is $-1.64\%$ after an up-bar versus $+1.12\%$ after a down-bar (Table~\ref{tab:stat}). A long-only trend follower is thus fighting the data's own sign structure.
+
+\paragraph{Why real underperforms its null.} The central diagnostic runs an unselected long-only bracket grid through progressively de-structured surrogates ($186$k strategy cells; Fig.~\ref{fig:decomp}, Table~\ref{tab:decomp}). Mean net-return-per-trade rises monotonically as structure is destroyed:
+\begin{center}\resizebox{\linewidth}{!}{$\displaystyle
+\underbrace{-4.06\%}_{\real}\;\to\;\underbrace{-3.87\%}_{\text{block-20}}\;\to\;\underbrace{-3.76\%}_{\text{block-5}}\;\to\;\underbrace{-3.44\%}_{\text{full shuffle}}\;\to\;\underbrace{-1.50\%}_{\text{drift-zeroed}}
+$}\end{center}
+with the fraction PF$>$1 rising $10.8\%\to12.8\%\to22.9\%$. \real{} is the \emph{worst} case. Decomposing: crash-clustering accounts for $\approx+0.43\%$/trade of the harm (real$\to$full-shuffle), negative drift for $\approx+1.93\%$ (full-shuffle$\to$drift-zero), and the residual $-1.50\%$ is exactly the $\sim$150--220\bp{} cost floor. In words: \emph{the very temporal structure a long-only timer tries to exploit, clustered crashes on a downward drift, is adverse to longs}, so shuffling it away \emph{helps}. This mechanism is load-bearing for the extended studies: it is why a bar-shuffled null repeatedly \emph{beats} real long-only strategies later in the paper without implying the null is tradeable.
+
+\paragraph{Survivorship quantified.} Conditioning on survival lifts median buy-and-hold from $-21.4\%$ to $-2\%$ (an $\sim$11$\times$ smaller loss; Fig.~\ref{fig:survivorship}), but timing remains a net loser even on survivors (mean $-1.6\%$, only $\sim$16\% of survivor coins positive). Survivorship is a real and large bias on \emph{holding} metrics but does not create a \emph{timing} edge.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_return_dist.pdf}\caption{Return distribution}\label{fig:retdist}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig2_tails.pdf}\caption{Tail / power-law fit ($\alpha<2$)}\label{fig:tails}\end{subfigure}
+\caption{DEX-only coin returns are sharply non-Gaussian: left-skewed with infinite-variance-regime tails.}
+\end{figure}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_survival_drawdown.pdf}\caption{Survival / drawdown}\label{fig:survival}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig4_temporal.pdf}\caption{Temporal structure (anti-momentum)}\label{fig:temporal}\end{subfigure}
+\caption{A negative-drift graveyard (left) that is mean-reverting and volatility-clustered (right).}
+\end{figure}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig6_decomposition_day.pdf}\caption{Real-vs-null decomposition}\label{fig:decomp}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig7_survivorship.pdf}\caption{Survivorship effect}\label{fig:survivorship}\end{subfigure}
+\caption{Central result: an unselected long-only bracket grid improves monotonically as temporal structure is destroyed, \real{} is the worst case (left); the gap decomposes into crash-clustering ($+0.43\%$/trade) and negative drift ($+1.93\%$/trade). Survivorship lifts buy-and-hold but not timing (right).}
+\end{figure}
+
+\begin{table}[tbp]\centering\small
+\caption{Return-process summary (daily; $N\!=\!4{,}089$ coins).}\label{tab:stat}
+\begin{tabular}{lr@{\hskip 1.6em}lr}\toprule
+mean log-ret/bar & $-0.00193$ & Hill $\alpha$ (down/up) & $1.51/1.30$\\
+\% coins negative drift & $73.4\%$ & $5\sigma$ exceedance vs Gaussian & $4{,}566\times$\\
+skew / excess kurtosis & $-0.95/556$ & lag-1 return ACF & $-0.16$\\
+median total return & $-18.5\%$ & variance ratio $VR(5)$ & $0.69$\\
+median max-drawdown & $-46.2\%$ & $|$ret$|$ ACF lag-1 (vol cluster) & $+0.21$\\
+\% net losers & $73.4\%$ & next-bar ret after up / down bar & $-1.64\%/+1.12\%$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[tbp]\centering\small
+\caption{Real-vs-null decomposition: mean net-return-per-trade of an unselected long-only bracket grid under progressively destroyed temporal structure ($186$k cells).}\label{tab:decomp}
+\begin{tabular}{lccccc}\toprule
+& \real & block-20 & block-5 & full-shuffle & drift-zero\\\midrule
+mean net/trade (daily) & $-4.06\%$ & $-3.87\%$ & $-3.76\%$ & $-3.44\%$ & $-1.50\%$\\
+\% PF$>$1 (daily) & $10.8\%$ & n/a & n/a & $12.8\%$ & $22.9\%$\\\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Intraday Scalping}\label{sec:scalp}
+We test short-hold strategies (1--12 hourly bars) on the hourly panel: eight entry families (volatility breakout, momentum burst, RSI snap, range-edge reversion, volume spike, Donchian breakout, lower-band tag, acceleration), each with tight take-profit/stop brackets and a structural max-hold axis $\{1,2,3,6,12\}$, walk-forward, against the null. The grid yields $113{,}856$ real and $117{,}474$ null $(\text{coin},\text{strategy},\text{hold})$ evaluations ($\sim$5.4M OOS trades each).
+
+The trade-length--cost frontier (Fig.~\ref{fig:scalpfront}, Table~\ref{tab:scalp}) is decisive: the \emph{gross} per-trade edge is $\approx$0 at every horizon ($6.5$\bp{} at a one-bar hold, falling to $1.6$\bp), while round-trip cost is $\sim$232--242\bp, so net return is mechanically $\approx-$cost and \emph{no hold length reaches breakeven}. On the full distribution, \real{} scalps return $-2.47\%$/trade with only $1.0\%$ of strategies PF$>$1, versus the \nul's $-1.40\%$ and $23.0\%$ (Table~\ref{tab:scalpnull}): the null produces $23\times$ more apparent winners. Even \emph{pre-cost} the null has a larger mean gross edge than real ($17$--$149$\bp{} vs.\ $2$--$6$\bp; Fig.~\ref{fig:scalpgross}): real momentum/breakout entries systematically chase already-moved prices that then mean-revert: a slight \emph{anti}-edge that is the microstructural image of the anti-momentum result in Section~\ref{sec:stat}. There is no intraday directional signal to harvest.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_frontier.pdf}\caption{Trade-length--cost frontier}\label{fig:scalpfront}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig7_gross_real_vs_null.pdf}\caption{Gross edge: real vs null}\label{fig:scalpgross}\end{subfigure}
+\caption{Scalping. Gross per-trade edge is statistically zero at all horizons and the $\sim$240\bp{} cost wall is never approached (left); even pre-cost, real has a slight anti-edge versus its shuffle (right).}
+\end{figure}
+\begin{table}[tbp]\centering\small
+\caption{Scalp gross/cost/net per trade by hold length (real, basis points).}\label{tab:scalp}
+\begin{tabular}{lrrrrr}\toprule
+hold (bars) & 1 & 2 & 3 & 6 & 12\\\midrule
+gross & $+6.5$ & $+2.2$ & $+2.4$ & $+1.6$ & $+1.9$\\
+cost & $242.4$ & $240.5$ & $238.1$ & $234.8$ & $231.2$\\
+net & $-235.9$ & $-238.3$ & $-235.7$ & $-233.2$ & $-229.3$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[tbp]\centering\small
+\caption{Scalp full-distribution outcomes, real vs null ($113{,}856/117{,}474$ evals).}\label{tab:scalpnull}
+\begin{tabular}{lccc}\toprule
+& median OOS PF & mean net/trade & \% PF$>$1\\\midrule
+\real & $0.005$ & $-2.47\%$ & $1.0\%$\\
+\nul{} (bar-shuffled) & $0.508$ & $-1.40\%$ & $23.0\%$\\\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Swing and Trend}\label{sec:swing}
+At the multi-day to multi-week horizon ($3{,}643$ coins, daily) we test six trend/breakout families and the ``ride-the-winner'' continuation hypothesis. The persistence diagnostic (Fig.~\ref{fig:autocorr}, Table~\ref{tab:swing}) confirms Section~\ref{sec:stat} at the strategy level: median AR(1) $=-0.099$ ($78.9\%$ of coins negative) and $VR(10)=0.74$, versus the null's $\approx0$ and $\approx0.94$, coins are anti-persistent at every horizon. The trend WFO corpus loses badly and loses to its null: real pooled median OOS PF $=0.124$, mean net $-1.7\%$/trade, $19.7\%$ PF$>$1, versus null PF $1.26$, $+9.1\%$, $56.9\%$ (Mann--Whitney $p\!\approx\!0$), and \emph{every} family is worse than its own null. The hold-length curve (Fig.~\ref{fig:holdlen}) has a negative median net in every bin from 0--5 to 20--30 days. The one genuine signal is momentum continuation conditional on a coin already being up, real \%-positive ($22$--$35\%$) exceeds the null ($16$--$20\%$) in all 36 conditional cells (Fig.~\ref{fig:ridewinner}), but the median forward return stays \emph{below zero} (sub-cost) in all 36, so it is a statistically-real signal that cannot be monetized. Per-coin persistence predicts tradeability (Spearman $\rho(VR_{10},\text{best OOS PF})=+0.55$), but only $\sim$15\% of coins trend, so the panel verdict is decisively negative.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig1_autocorr.pdf}\caption{Persistence}\label{fig:autocorr}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig4_holdlen.pdf}\caption{Net/trade by hold}\label{fig:holdlen}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig5_ride_winner.pdf}\caption{Ride-the-winner}\label{fig:ridewinner}\end{subfigure}
+\caption{Trend has nothing to harvest ($VR<1$); longer holds never turn positive; continuation is real but sub-cost.}
+\end{figure}
+\begin{table}[tbp]\centering\small
+\caption{Swing persistence and trend-WFO outcomes, real vs null.}\label{tab:swing}
+\begin{tabular}{lcc@{\hskip 2em}lcc}\toprule
+persistence (median) & \real & \nul & trend WFO (pooled) & \real & \nul\\\midrule
+AR(1) & $-0.099$ & $-0.006$ & median OOS PF & $0.124$ & $1.26$\\
+$VR(5)$ & $0.734$ & $0.973$ & mean net/trade & $-1.7\%$ & $+9.1\%$\\
+$VR(10)$ & $0.737$ & $0.938$ & \% PF$>$1 & $19.7\%$ & $56.9\%$\\
+\% coins $VR(10)>1$ & $16.8\%$ & $39.4\%$ & Mann--Whitney $p$ & \multicolumn{2}{c}{$\approx0$}\\\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cross-Sectional Selection}\label{sec:xsec}
+Treating the universe as a daily panel, we long the top-$K$ coins each rebalance by a cross-sectional signal (momentum at several lookbacks, short-term reversion, volatility, volume growth, liquidity tier), versus an equal-weight-universe benchmark, with a null that permutes the signal \emph{across coins} each rebalance (200 draws). The full grid (624 combos; Fig.~\ref{fig:xsecgrid}) shows mean cross-sectional edge \emph{negative} for every signal/$K$/$R$: top-$K$ underperforms the passive universe net of cost. What positive edge appears is confined to tiny $K$, is moonshot-concentrated ($\approx$47--54\% of the $K\!=\!2$--3 edge comes from the single top coin; Fig.~\ref{fig:concentration}) and fold-fragile. Portfolio-level decorrelation has a hard ceiling: across $N=10\to1{,}500$ strategy streams the effective independent dimensions saturate at $\approx$5.7 (Fig.~\ref{fig:decorr}, Table~\ref{tab:decorr}). Independence, where it exists, comes from the cross-section of \emph{coins}, not of portfolios; but that route is gated by the absence of per-coin edge established in Sections~\ref{sec:scalp}--\ref{sec:swing}. This linear-signal negative is revisited with a nonlinear learner in Part~\ref{part:ml}, the one place a positive appears.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig1_grid_real_vs_null.pdf}\caption{Grid: real vs null}\label{fig:xsecgrid}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig3_decorrelation_dims.pdf}\caption{Decorrelation ceiling}\label{fig:decorr}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig4_concentration_fattail.pdf}\caption{Moonshot concentration}\label{fig:concentration}\end{subfigure}
+\caption{Cross-sectional selection does not beat the passive universe (left); apparent edge is a tiny-$K$ lottery (right); portfolio independence saturates at $\sim$6 dimensions (centre).}
+\end{figure}
+\begin{table}[tbp]\centering\small
+\caption{Portfolio-stream decorrelation vs.\ number of streams $N$.}\label{tab:decorr}
+\begin{tabular}{lrrrrrr}\toprule
+$N$ & 10 & 50 & 100 & 400 & 800 & 1500\\\midrule
+median $|\rho|$ & 0.43 & 0.31 & 0.33 & 0.34 & 0.33 & 0.33\\
+participation ratio & 3.46 & 6.04 & 5.53 & 5.48 & 5.66 & 5.68\\
+pr$/N$ & 0.35 & 0.12 & 0.055 & 0.014 & 0.007 & 0.0038\\\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Cross-Chain Microstructure and the Cost Frontier}\label{sec:chain}
+Exploiting the breadth (27 chains, $4{,}279$ coins with reserve metadata), we map \emph{where trading is even viable}. Tradeability is governed by a two-variable frontier, pool depth and per-chain gas (Fig.~\ref{fig:frontier}). Depth is the master variable: across reserve tiers $\langle\$10$k$\rangle\!\to\!\langle\$1$M$\rangle$, median round-trip cost falls $375\to160$\bp, survivor fraction rises $24\%\to37\%$, and the fraction ending $>$50\% off-peak falls $43\%\to16\%$, all monotone (Table~\ref{tab:tier}). Only \textbf{47.4\%} of the universe is structurally tradeable (cost below a one-sigma daily move and reserve $\geq\$25$k), ranging from $\sim$74--76\% (Solana, Base) to $<$10\% (Scroll, Mode) by chain (Fig.~\ref{fig:tradeable}). But ``tradeable'' only means cost \emph{can} be cleared: a single standardized long-only strategy run identically on every chain bleeds $\approx$cost everywhere (5\%-trimmed mean net $-3.38\%$/trade) and is \emph{significantly worse than its null} ($+5.08\%$; Mann--Whitney $p=0.019$; Fig.~\ref{fig:chainnull}). \emph{No chain reaches positive expectancy.}
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig1_cost_frontier_heatmap.pdf}\caption{Cost frontier (size$\times$depth)}\label{fig:frontier}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig5_tradeability_by_chain.pdf}\caption{Tradeable fraction by chain}\label{fig:tradeable}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig4_strategy_real_vs_null.pdf}\caption{Strategy: real vs null}\label{fig:chainnull}\end{subfigure}
+\caption{Depth and gas set a hard cost frontier ($\sim$47\% tradeable); yet even where tradeable, no chain reaches positive expectancy and real loses to null.}
+\end{figure}
+\begin{table}[tbp]\centering\small
+\caption{Liquidity-tier structure (reserve buckets; medians of per-coin statistics).}\label{tab:tier}
+\begin{tabular}{lrrrrr}\toprule
+reserve tier & $<$\$10k & \$10--50k & \$50--250k & \$250k--1M & $>$\$1M\\\midrule
+$N$ coins & 627 & 1305 & 1065 & 639 & 636\\
+round-trip cost (bp) & 375 & 179 & 163 & 161 & 160\\
+median total return & $-29.7\%$ & $-27.7\%$ & $-18.0\%$ & $-11.4\%$ & $-0.4\%$\\
+\% survivors & 24.4 & 22.4 & 28.5 & 31.8 & 37.3\\
+\% ending $>$50\% off-peak & 42.6 & 38.5 & 28.4 & 26.9 & 16.2\\\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Part~\ref{part:timing} verdict.} Five analyses, run from independent angles, converge: a long-only, realistically-costed trader has \emph{no price-based timing or linear-selection edge} in DEX-only coins, at any horizon, on any chain, in any liquidity tier, and real data is consistently \emph{worse than its own bar-shuffled null}, a structural consequence of a negative-drift, anti-momentum, crash-clustered, expensive market. The remainder of the paper asks whether this verdict survives scrutiny (Part~\ref{part:robust}), whether any non-timing strategy escapes it (Part~\ref{part:alt}--\ref{part:ml}), and what the dominant remaining bias is (Part~\ref{part:surv}).
+
+% =====================================================================
+\part{Robustness of the Timing Verdict}\label{part:robust}
+% =====================================================================
+\noindent For the thesis to hold, the Part~\ref{part:timing} negative must be a property of the market and not of how we tested it. It invites three methodological objections: (i) the conservative intrabar exit convention might bury a breakout edge; (ii) the in-sample selection might be too weak (or too strong) and the OOS collapse an artifact of noise-fitting; (iii) the single-scalar cost model might be wrong. We address each head-on and find the verdict unchanged.
+
+\section{The Intrabar Take-Profit/Stop Convention}\label{sec:bracket}
+When a bar's range spans \emph{both} the take-profit and the stop, the order in which they were touched is unknowable from OHLCV; the baseline assumes the stop first (the pessimistic bound). We re-run the full 16-family per-coin walk-forward under three resolutions of such ambiguous bars: \texttt{sl\_first} (lower bound), \texttt{tp\_first} (upper bound), and a 50/50 \texttt{split} (the exact expectation), with in-sample selection \emph{always} on \texttt{sl\_first} so the optimistic bound cannot leak into selection. The convention's footprint is tiny because spanning bars are rare: only \textbf{0.57\% of daily} and \textbf{0.024\% of hourly} bracket exits are ambiguous (hourly bars span both levels \emph{less} often, so finer resolution shrinks the effect). Consequently, moving from the pessimistic to the optimistic bound improves net return by at most \textbf{$+22.9$\bp/trade (daily)} and \textbf{$+1.1$\bp/trade (hourly)}, against a $\sim$164\bp{} cost and a $\sim$200--220\bp/trade deficit (Table~\ref{tab:bracket}, Fig.~\ref{fig:bracketnet}). Under even the most generous bound, \emph{no} family crosses PF$=$1 at either timeframe (best daily \texttt{ma\_pullback} PF $0.71$; best hourly \texttt{roc\_rev} PF $0.96$; Fig.~\ref{fig:bracketfam}), and real stays strictly worse than its null in all six (timeframe, rule) cells. The monotone ordering \texttt{sl\_first} $\leq$ \texttt{split} $\leq$ \texttt{tp\_first} confirms a correctly-bounded effect. The SL-first convention is not masking an edge.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_medpf_by_rule.pdf}\caption{Median OOS PF by resolution rule}\label{fig:bracketpf}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_perfamily_bounds.pdf}\caption{Per-family bounds (no family clears PF$=$1)}\label{fig:bracketfam}\end{subfigure}
+\caption{Bracket-convention robustness. Flipping the ambiguous-bar rule from pessimistic to optimistic barely moves median PF (left) and lifts no family above breakeven (right). The convention swing is $\leq$23\bp/trade.}
+\end{figure}
+\begin{table}[tbp]\centering\small
+\caption{Intrabar TP/SL convention bounds, real vs null. Ambiguous (span) bars are $0.57\%$ (daily) / $0.024\%$ (hourly) of exits.}\label{tab:bracket}
+\setlength{\tabcolsep}{5pt}\begin{tabular}{llrrrr}\toprule
+tf & rule & \real{} med PF & \nul{} med PF & \real{} net/tr & \nul{} net/tr\\\midrule
+day  & \texttt{sl\_first} & 0.262 & 1.464 & $-220.3$\bp & $+78.5$\bp\\
+day  & \texttt{split}     & 0.264 & 1.473 & $-208.9$\bp & $+79.3$\bp\\
+day  & \texttt{tp\_first} & 0.269 & 1.479 & $-197.4$\bp & $+80.0$\bp\\
+hour & \texttt{sl\_first} & 0.0428 & 0.589 & $-222.9$\bp & $+8.4$\bp\\
+hour & \texttt{split}     & 0.0428 & 0.589 & $-222.3$\bp & $+8.4$\bp\\
+hour & \texttt{tp\_first} & 0.0428 & 0.589 & $-221.8$\bp & $+8.5$\bp\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.82\linewidth]{fig2_net_by_rule.pdf}
+\caption{Mean net-return-per-trade by resolution rule and timeframe: every cell is $\sim$200\bp{} underwater and below its null; the optimistic--pessimistic span is dwarfed by the cost wall.}\label{fig:bracketnet}
+\end{figure}
+
+\section{In-Sample Selection and Noise-Fitting}\label{sec:isnoise}
+A second objection: the baseline selects the best of a small number of parameter draws on as few as five in-sample trades, so the OOS collapse could be \emph{noise-fitting} rather than a true absence of edge. We sweep the selection regime (in-sample length $\in\{240,360,480\}$, minimum in-sample trades $\in\{5,15,30\}$, parameter draws $\in\{12,40\}$, and a trade-count-penalized objective) ten settings in all, each with its null (Table~\ref{tab:isnoise}, Fig.~\ref{fig:isnoise}). Stricter selection does \emph{not} lift OOS: real median OOS PF stays in $[0.008,\,0.048]$ versus null $[0.58,\,0.69]$ across all ten settings, mean net/trade stays $\approx-2.1$ to $-2.3\%$, and Mann--Whitney $p\!\approx\!0$ everywhere. If anything the strictest setting (IS$=$480, min-30-trades, 40 draws, PF-penalty) gives the \emph{lowest} real PF ($0.008$). The negative is a \emph{sign} problem, long-only entries run over by adverse drift, not an estimation problem; no amount of in-sample discipline manufactures an out-of-sample edge that the data does not contain.
+
+\begin{table}[tbp]\centering\footnotesize\setlength{\tabcolsep}{5pt}
+\caption{In-sample selection sweep (daily); setting $=$ (IS length, min IS trades, param draws, objective). Real OOS PF never approaches the null at any strictness.}\label{tab:isnoise}
+\begin{tabular}{lrrrrr}\toprule
+setting & \real{} PF & \nul{} PF & \real{} net/tr & \nul{} net/tr & MW $p$\\\midrule
+IS240, 5, 12, PF       & 0.041 & 0.581 & $-2.16\%$ & $+0.81\%$ & $\approx0$\\
+IS240, 5, 12, net/tr   & 0.031 & 0.583 & $-2.11\%$ & $+1.05\%$ & $\approx0$\\
+IS240, 15, 12, PF      & 0.013 & 0.615 & $-2.21\%$ & $+0.90\%$ & $\approx0$\\
+IS240, 30, 12, PF      & 0.000 & 0.933 & $-1.45\%$ & $+2.30\%$ & $\approx0$\\
+IS240, 5, 40, PF       & 0.046 & 0.629 & $-2.14\%$ & $+1.36\%$ & $\approx0$\\
+IS360, 5, 12, PF       & 0.038 & 0.593 & $-2.17\%$ & $+1.06\%$ & $\approx0$\\
+IS480, 5, 12, PF       & 0.014 & 0.602 & $-2.30\%$ & $+1.29\%$ & $\approx0$\\
+IS360, 15, 40, PF-pen  & 0.018 & 0.642 & $-2.19\%$ & $+1.60\%$ & $\approx0$\\
+IS480, 30, 40, PF-pen  & 0.008 & 0.686 & $-2.23\%$ & $+1.92\%$ & $\approx0$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig2_is_strictness_trends.pdf}\caption{OOS PF vs.\ selection strictness}\label{fig:isnoisetrend}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_real_vs_null_medPF.pdf}\caption{Real vs null, every setting}\label{fig:isnoisernull}\end{subfigure}
+\caption{Noise-fitting robustness. Across ten selection regimes the real OOS profit factor sits far below the null and does not rise with strictness; the gap is structural, not an artifact of weak (or strong) selection.}\label{fig:isnoise}
+\end{figure}
+
+\section{Cost-Model and Liquidity-Depth Sensitivity}\label{sec:costdepth}
+A third objection: the constant-product cost \eqref{eq:cost} assumes executable single-sided depth $=R/2$, whereas most volume is on concentrated-liquidity (v3) pools where near-mid depth is a \emph{fraction} of total value locked, and the engine assumes the bar close is executable at mid. We hold the trade set fixed and re-price it under a two-axis grid (active-tick depth fraction $\in\{0.05,0.20,0.50,1.00\}\times$ stale-close penalty $\in\{0,30,100\}$\bp/leg) plus a continuous $0\!-\!5\times$ cost multiplier to locate the break-even (Table~\ref{tab:costdepth}, Fig.~\ref{fig:costfrontier}). The conclusion is robust in \emph{both} directions. The median strategy is net-negative \textbf{even at zero cost} (gross median PF $0.94$, median net $-1.3$\bp, only $48.1\%$ PF$>$1, worse than a coin flip), so there is \emph{no positive break-even cost} to find. At the generous full-TVL/no-penalty corner the median still loses $129$\bp/trade; the realistic v3 correction only deepens it ($-344$\bp{} at 20\% active-tick, $-1106$\bp{} at 5\%). Across the entire grid real is dominated by its null, which tolerates $\sim$505\bp{} of cost before breaking even. The negative result does not depend on the cost model being exactly right.
+
+\begin{table}[tbp]\centering\small
+\caption{Depth/stale-penalty sensitivity: real median net-return-per-trade (\bp). Every cell is negative; even full-TVL depth with no stale penalty loses.}\label{tab:costdepth}
+\begin{tabular}{lrrr}\toprule
+active-tick depth & stale $0$\bp & stale $30$\bp & stale $100$\bp\\\midrule
+$1.00$ (full TVL, generous) & $-129$ & $-189$ & $-329$\\
+$0.50$ (v2 baseline)        & $-183$ & $-243$ & $-383$\\
+$0.20$ (v3 typical)         & $-344$ & $-404$ & $-544$\\
+$0.05$ (v3 thin)            & $-1106$ & $-1166$ & $-1306$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_cost_edge_frontier.pdf}\caption{Cost-vs-edge frontier \& break-even}\label{fig:costfrontier}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_depth_heatmap.pdf}\caption{Depth $\times$ stale-penalty heatmap}\label{fig:costheat}\end{subfigure}
+\caption{Cost sensitivity. Real median net crosses zero at \emph{no} positive cost (the gross median is already $<0$); the null tolerates $\sim$505\bp. Every depth assumption leaves real underwater (right).}
+\end{figure}
+
+\paragraph{Why the null looks profitable (a recurring caution).} On thin coins the bar-shuffle preserves each bar's inflated intrabar high-low range while destroying sequence, so intrabar brackets harvest those ranges out of order, an upward-biased null PF \emph{ceiling}. The honest reading of Parts~\ref{part:robust}--\ref{part:alt} is therefore ``real $<$ null at every setting,'' never ``the null is tradeable.'' That real fails to beat even an inflated null is what makes the negative conservative.
+
+% =====================================================================
+\part{Alternative Channels}\label{part:alt}
+% =====================================================================
+\noindent Part~\ref{part:timing} closed price-based \emph{timing}. Practitioners in this market rarely trade price timing directly; they hedge market beta, snipe launches, provide liquidity, arbitrage pools, condition on the BTC regime, diversify across many decorrelated streams, or trade order flow. The thesis claims that price \emph{information} is insufficient, not merely that one tactic is; so we test all seven, and were any to beat a null net of cost the thesis would be wrong. None does.
+
+\section{Market-Neutral Hedging}\label{sec:hedge}
+If long-only DEX baskets bleed because they ride a falling, mean-reverting market, perhaps shorting that market beta on a CEX perpetual rescues them. We form a tradeable basket (reserve $\geq\$50$k, $\geq$120 daily bars, excluding wrapped-majors/stables/liquid-staking, those \emph{are} the market), estimate its beta to on-chain BTC and ETH USD references by rolling 60-day OLS, and short $\beta\times$notional on the perp (taker $0.05\%$/side, funding $0.03\%$/day), walk-forward. The basket's market beta is real ($\sim$0.78 to BTC, $\sim$0.60 to ETH), but hedging it does \emph{not} produce a robust edge (Table~\ref{tab:hedge}, Fig.~\ref{fig:hedgeeq}). The single positive headline, equal-weight ETH-hedge Sharpe $+1.47$, fails three independent tests: (i) a naive no-skill buy-and-hold scores $+1.60$ over the same window, \emph{beating} every hedged variant; (ii) the bootstrap 95\% CI is $[-2.27,+4.74]$ with $p(\text{Sharpe}\leq0)=0.26$ (Fig.~\ref{fig:hedgeci}); (iii) OOS Sharpe is monotone in rebalance interval (daily $-32.6 \to$ weekly $+1.47 \to$ buy-once $+7.5$), i.e.\ the ``edge'' is paying the $\sim$164\bp{} fill cost fewer times, not removing beta. Liquidity-weighted hedges are firmly negative (BTC $-2.05$, ETH $-1.43$). The real-beats-null gap here is again cost-on-persistence: the shuffled basket churns the fill cost on destroyed structure and bleeds harder. The result is single-regime (only $\sim$180 days of on-chain BTC/ETH reference, a bull leg) and survivorship-inflated, so even the insignificant positive is not an edge.
+
+\begin{table}[tbp]\centering\small
+\caption{Beta-hedged long DEX basket, OOS net (120 days, equal-weight). The lone positive is turnover-driven and statistically zero.}\label{tab:hedge}
+\begin{tabular}{lrrrrr}\toprule
+variant & Sharpe & ann.\ ret & MaxDD & Calmar & \nul{} Sharpe\\\midrule
+unhedged long      & $-0.36$ & $-23.0\%$ & $-19.9\%$ & $-1.15$ & $-1.52$\\
+BTC-beta hedged    & $+0.47$ & $+8.4\%$  & $-9.6\%$  & $+0.87$ & $-1.46$\\
+ETH-beta hedged    & $+1.47$ & $+34.1\%$ & $-13.8\%$ & $+2.47$ & $-1.49$\\
+buy\&hold (no skill)& $+1.60$ & $+86.9\%$ & $-18.4\%$ & $+4.71$ & n/a\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_equity_curves.pdf}\caption{OOS equity curves}\label{fig:hedgeeq}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig4_bootstrap_ci.pdf}\caption{Bootstrap Sharpe CI (straddles 0)}\label{fig:hedgeci}\end{subfigure}
+\caption{Market-neutral hedge. No hedged variant beats a no-skill buy-and-hold (left), and the best variant's Sharpe CI straddles zero ($p=0.26$, right). The apparent edge is a turnover-cost artifact in a single bull regime.}
+\end{figure}
+
+\section{The Launch Window}\label{sec:launch}
+The corpus requires history, so it excludes the launch dynamics where DEX edge is often claimed to live. We re-introduce them with an age-cohort event study: align every coin on days-since-pool-creation and stack returns. The \emph{median} launch path is essentially flat (peaks $+0.9\%$ at day 27; the mean explodes only on right-skew), i.e.\ no systematic post-launch drift to harvest long-only (Fig.~\ref{fig:launchfan}). Two costed, causal, walk-forward strategies confirm it (Table~\ref{tab:launch}): a launch-window long does not beat its null (real OOS PF $2.00$ vs.\ null $2.12$, the null ties or wins), and an ``avoid-first-$N$-days'' filter applied to the Part~\ref{part:timing} test never lifts it above the null at any $N\in\{0,3,7,14,21\}$ (real median PF $\sim$0.65 vs.\ null $1.6$--$1.9$; real median per-trade return negative at every $N$; Fig.~\ref{fig:launchfilter}). The launch window is neither a source of long-only edge nor a useful filter.
+
+\begin{table}[tbp]\centering\small
+\caption{Age filter applied to the per-coin timing test: skip the first $N$ days, real vs null. Real never beats null; median per-trade return stays negative.}\label{tab:launch}
+\begin{tabular}{lrrrr}\toprule
+skip $N$ days & \real{} med PF & \nul{} med PF & \real{} med ret/trade & \nul{} med ret/trade\\\midrule
+0  & 0.647 & 1.606 & $-1.50\%$ & $+5.77\%$\\
+3  & 0.694 & 1.672 & $-1.47\%$ & $+7.19\%$\\
+7  & 0.638 & 1.611 & $-1.52\%$ & $+5.54\%$\\
+14 & 0.665 & 1.916 & $-1.60\%$ & $+7.84\%$\\
+21 & 0.406 & 1.679 & $-1.23\%$ & $+5.38\%$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_event_study_fan.pdf}\caption{Age-cohort event-study fan}\label{fig:launchfan}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_age_filter_real_vs_null.pdf}\caption{Avoid-first-$N$-days filter vs null}\label{fig:launchfilter}\end{subfigure}
+\caption{Launch window. The median age-cohort path is flat (left); skipping the early window never lifts the timing test above its null (right).}
+\end{figure}
+
+\section{Passive Liquidity Provision}\label{sec:lp}
+The \emph{native} AMM strategy is not directional trading but providing liquidity and earning fees. We model both full-range (v2-style) and concentrated positions, accruing fees from volume$\times$fee-tier against impermanent loss / loss-versus-rebalancing (LVR) \cite{milionis2022} computed on each pool's own price path, net of entry/exit/rebalance gas. The naive picture looks attractive, median APR $+4.5\%$ (full-range) on raw volume$\times$fee, but it collapses under a realistic volume-capture cap and an LVR haircut to a median of $+0.72\%$ APR with a \emph{negative} mean ($-42\%$); LVR is the dominant cost, not fees (Table~\ref{tab:lp}, Fig.~\ref{fig:lpapr}). Crucially, the only risk-controlled \emph{selection} rule (preferring deep, high-volume pools) is statistically indistinguishable from a random-pool null ($p=0.52$ full-range, $0.56$ concentrated; Fig.~\ref{fig:lpsel}): the apparent fee-yield ``signal'' rides the survivor-tilted wash-volume tail. Passive market-making is not a reliable edge on this universe once IL/LVR and pool selection are honestly priced.
+
+\begin{table}[tbp]\centering\small
+\caption{LP net APR under progressively realistic frictions (full-range). Fees are swamped by LVR; the median collapses and the mean goes negative.}\label{tab:lp}
+\begin{tabular}{lrrr}\toprule
+friction model & median APR & mean APR & \% positive\\\midrule
+fees only (theoretical max)        & $+4.50\%$ & $+94.1\%$ & 67.7\%\\
++ volume-capture cap               & $+4.36\%$ & $+27.9\%$ & 67.5\%\\
++ LVR haircut                      & $+0.87\%$ & $+24.1\%$ & 53.0\%\\
++ volume cap \emph{and} LVR (realistic) & $+0.72\%$ & $-42.1\%$ & 52.6\%\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_apr_distribution.pdf}\caption{Net-APR distribution}\label{fig:lpapr}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_selection_vs_null.pdf}\caption{Pool selection vs random-pool null}\label{fig:lpsel}\end{subfigure}
+\caption{Liquidity provision. Realistic frictions push the median net APR to $\sim$0 with a negative mean (left); a risk-controlled pool-selection rule is null-equivalent (right).}
+\end{figure}
+
+\section{Cross-Pool Dispersion and Arbitrage}\label{sec:arb}
+A token often trades in several pools (same chain, different DEX; or across chains). Price dispersion between them is the cleanest relative edge, and is exempt from the long-only constraint. Across 397 multi-pool tokens, median USD dispersion is only \textbf{51\bp{} (daily) / 30\bp{} (hourly)}, below the $\sim$165\bp{} two-leg arbitrage cost; only $3.3\%$ (daily) / $0.12\%$ (hourly) of bars show dispersion exceeding cost, and a costed rebalance-to-consensus strategy returns $-0.75\%$ net (Table~\ref{tab:arb}, Fig.~\ref{fig:arbdisp}). Real prices are already tightly co-arbitraged: real dispersion is dramatically \emph{tighter} than a bar-shuffle null (which manufactures fake $\sim$24\% spreads and ``beats cost'' on 95\% of bars; Fig.~\ref{fig:arbbt}). The honest caveat is that bar-aggregated OHLCV cannot resolve intrabar simultaneity, a true latency-arbitrage test needs synchronized tick data, but the bar-level result shows no harvestable standing dispersion.
+
+\begin{table}[tbp]\centering\small
+\caption{Cross-pool dispersion vs.\ arbitrage cost (397 multi-pool tokens). Real spreads are tight; the null manufactures fake ones.}\label{tab:arb}
+\begin{tabular}{lrrrr}\toprule
+& med dispersion & med arb cost & \% bars $>$ cost & net of costed arb\\\midrule
+\real{} (daily)       & $51$\bp & $165$\bp & $3.35\%$ & $-0.73\%$\\
+\nul{} (bar-shuffle)  & $2418$\bp & $165$\bp & $95.0\%$ & $+16.5\%$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_dispersion_vs_cost.pdf}\caption{Dispersion vs.\ cost}\label{fig:arbdisp}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_arb_backtest_real_vs_null.pdf}\caption{Costed arbitrage: real vs null}\label{fig:arbbt}\end{subfigure}
+\caption{Cross-pool arbitrage. Standing dispersion rarely exceeds the two-leg cost (left); the only ``profitable'' arbitrage is on the shuffled null's fake spreads (right).}
+\end{figure}
+
+\section{BTC-Regime Conditioning}\label{sec:regime}
+Small-cap alt behavior is strongly risk-on/off. We build a causal BTC trend/volatility regime from the on-chain BTC reference and re-run the per-coin timing test conditioned on it. No regime hides a positive long-only slice; if anything longs bleed \emph{hardest} in risk-on trends (Table~\ref{tab:regime}). Unconditionally real median OOS PF is $0.27$ (net $-1.86\%$/trade); the worst variant, risk-on-trend, is $-2.55\%$/trade; all seven variants are net-negative with bootstrap 95\% CIs below zero, and all sit far under their (inflated) nulls. Conditioning on the market regime does not rescue long-only timing.
+
+\begin{table}[tbp]\centering\small
+\caption{Per-coin timing conditioned on BTC regime, real (all variants net-negative) vs null.}\label{tab:regime}
+\begin{tabular}{lrrr@{\hskip 2em}rr}\toprule
+& \multicolumn{3}{c}{\real} & \multicolumn{2}{c}{\nul}\\
+variant & med PF & net/trade & \% PF$>$1 & med PF & net/trade\\\midrule
+unconditional   & 0.268 & $-1.86\%$ & 20.1\% & 1.455 & $+4.26\%$\\
+risk-on trend   & 0.167 & $-2.55\%$ & 16.1\% & 1.887 & $+9.51\%$\\
+risk-off trend  & 0.010 & $-1.28\%$ & 24.7\% & 2.598 & $+12.4\%$\\
+risk-on low-vol & 0.219 & $-1.64\%$ & 19.8\% & 1.335 & $+4.27\%$\\
+risk-off low-vol& 0.221 & $-1.64\%$ & 24.2\% & 3.489 & $+15.9\%$\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.82\linewidth]{fig2_net_per_trade_ci.pdf}
+\caption{Net-return-per-trade by BTC regime with bootstrap CIs: every regime is net-negative with its interval below zero. Long-only timing has no risk-on hiding place.}\label{fig:regime}
+\end{figure}
+
+\section{A Portfolio of Marginal, Decorrelated Streams}\label{sec:portfolio}
+Section~\ref{sec:xsec} showed per-coin PnL streams are weakly correlated; perhaps aggregating thousands of them manufactures a portfolio edge even if each is individually marginal. It does not, it builds a diversified portfolio of \emph{losers}. Per-stream OOS expectancy has median $-1.91\%$/trade with only $19.7\%$ of streams profitable, versus the null's $+4.42\%$ and $62.1\%$ (Fig.~\ref{fig:portexp}); a book formed from the real streams is dominated by the null book at every weighting (equal, inverse-vol, equal-risk-contribution, vol-targeted) and every assumed AUM. Capacity is the coup de gr\^ace: at $0.25\%$-of-reserve sizing the deployable capital is $\sim\$100$ per stream, so the deployed fraction decays from $94\%$ at \$1k to $\sim$3\% at \$100M (Fig.~\ref{fig:portcap}), the book mechanically converts to cash before it can hold meaningful size. (We note that absolute book Sharpes on the \emph{positive-expectancy subset} look large, but these are a selection-and-sparse-series artifact; only the real-vs-null comparison is interpretable, and it favors the null throughout.) Diversification cannot rescue an edge that is negative at the stream level.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_per_stream_expectancy.pdf}\caption{Per-stream expectancy: real vs null}\label{fig:portexp}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig2_capacity_decay.pdf}\caption{Capacity decay vs.\ AUM}\label{fig:portcap}\end{subfigure}
+\caption{Portfolio aggregation. The stream-level expectancy distribution is net-negative and below its null (left); per-stream capacity of $\sim\$100$ collapses the deployable fraction as AUM grows (right).}
+\end{figure}
+
+\section{Order Flow}\label{sec:flow}
+The Part~\ref{part:timing}/\ref{sec:xsec} signals were all price- or volume-derived. Order flow, who is buying versus selling, is the leading non-price candidate. We test it three ways. (i) \emph{Per-swap flow imbalance} (BSC tapes): signed order-flow imbalance does not beat a within-coin shuffle even \emph{before} cost (permutation $p=0.56$; gross per-trade noise $\sim$22\bp{} is dwarfed by the 160\bp{} cost), and a weak close-to-close predictive correlation dies in the path-dependent bracket. (ii) \emph{Daily count-based flow} (224-token aggregate): trader- and transaction-count imbalance gives no robust selection edge, real median edge $-192$\bp{} vs.\ null $-173$\bp{} (real slightly \emph{worse}); only 1/33 configurations survives a Bonferroni correction, and it is a single-day two-microcap lottery (Fig.~\ref{fig:flowcount}). (iii) \emph{Static metadata/liquidity selection}: no single feature (age, turnover, Amihud illiquidity, volume growth/acceleration) has a positive in-sample edge, so a composite picks none and all OOS baskets are net-negative; the one positive-$z$ feature is survivorship-driven and still loses $-3.1\%$ (Fig.~\ref{fig:flowmeta}). Two important honesty notes: the per-swap and count-flow tests are coverage-limited (5 coins$\times$14 days; a 5-day usable panel) and underpowered: a $\geq$6-month, multi-coin per-swap tape is needed for a powered verdict; and the apparent ``degenerate'' USD field in the count aggregate is not a bug but a per-token price-feed gap (USD correct for 162/227 tokens). Flow shows no edge on the data in hand, but the channel is not yet decisively closed.
+
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig2_gross_vs_costed.pdf}\caption{Per-swap flow: gross vs costed (BSC)}\label{fig:floworder}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig1_feature_real_vs_null.pdf}\caption{Static-feature selection vs null}\label{fig:flowmeta}\end{subfigure}
+\caption{Order flow. Per-swap imbalance is indistinguishable from a shuffle even pre-cost (left); no static metadata feature ranks coins above its across-coin null (right).}
+\end{figure}
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.82\linewidth]{real_vs_null_edge.pdf}
+\caption{Count-based daily flow selection: real top-$K$ edge versus the across-coin permutation null over signal/$K$/horizon configurations. Real does not consistently or materially beat null; the single significant cell is a one-day microcap lottery that does not survive multiple-testing correction.}\label{fig:flowcount}
+\end{figure}
+
+% =====================================================================
+\part{A Qualified Positive: Cross-Sectional Machine Learning}\label{part:ml}
+% =====================================================================
+\noindent Every price-based and linear approach has now failed. This Part reports the single exception in the entire study, the one signal that beats its null, and shows that even it confirms the thesis rather than overturning it: what it predicts is crashes, not gains, and it does so from non-price, time-varying information that price-based timing and selection cannot see.
+
+\section{A Nonlinear Cross-Sectional Ranker}\label{sec:ml}
+Every linear signal failed (Sections~\ref{sec:xsec},~\ref{sec:flow}). We give the cross-section a nonlinear learner: gradient-boosted trees (LightGBM and a histogram GBM) trained, in a strict walk-forward, to predict each coin's forward-return \emph{rank} from purely causal features (multi-horizon past returns and volatility, log-age, turnover, Amihud illiquidity, volume velocity, log-reserve, momentum acceleration, range, drawdown, and the available flow counts). The null permutes the labels across coins. This is the \emph{one} test in the entire study that beats its null (Table~\ref{tab:ml}, Fig.~\ref{fig:mlic}): out-of-sample rank-IC is positive and significant (median $\approx+0.079$, peak $t=+4.66$ at a 14-day horizon, versus $\approx+0.004$ for the null), and real exceeds null in \textbf{18 of 18} (model, horizon, $K$) configurations. Top-features are the time-varying ones (10- and 5-day returns, log-age, volume velocity, 20-day turnover); the static metadata that failed in Section~\ref{sec:flow} contributes little and the sparse flow counts contribute $<1.4\%$ (Fig.~\ref{fig:mlfeat}), consistent with the linear-feature negatives and with flow's coverage limitation.
+
+\paragraph{But the skill is crash-avoidance, not return-seeking.} The decile diagnostic is decisive and cautionary (Fig.~\ref{fig:mldecile}): \emph{every} predicted decile has a \emph{negative} median forward return, and the top predicted decile is \emph{not} the top-return decile. The model has learned which coins fall hardest, not which rise, genuine, null-beating predictability that lives in the \emph{lower} half of the distribution. In a long-only, loss-tilted, survivor-selected panel where even the benchmark loses money, the modest top-$K$-versus-benchmark net advantage is not cleanly separable from sidestepping the survivorship left tail, and calendar power is thin (7--30 disjoint rebalances on the $\sim$6-month window). We therefore report this as a \emph{lead}, not a deployable edge: the natural way to monetize ``knows what will crash'' is avoidance or shorting (which requires the CEX-perp plumbing of Section~\ref{sec:hedge}, now \emph{signal-driven} rather than indiscriminate), and any long-only net claim must first be re-tested on the survivorship-free panel of Part~\ref{part:surv}.
+
+\begin{table}[tbp]\centering\small
+\caption{Cross-sectional GBT ranker, OOS, real vs null (selected configurations; real $>$ null in all 18). IC $=$ rank information coefficient.}\label{tab:ml}
+\begin{tabular}{llrrrrl}\toprule
+model & horizon & \real{} IC & \real{} IC $t$ & \nul{} IC & top-$K$ net edge & real$>$null\\\midrule
+LightGBM & 7d  & $+0.081$ & $+3.57$ & $-0.008$ & $+0.123$ & yes\\
+LightGBM & 14d & $+0.111$ & $+4.66$ & $-0.015$ & $+0.064$ & yes\\
+LightGBM & 30d & $+0.066$ & $+1.66$ & $+0.011$ & $+0.089$ & yes\\
+HistGBM  & 7d  & $+0.077$ & $+3.33$ & $-0.023$ & $+0.049$ & yes\\
+HistGBM  & 14d & $+0.108$ & $+4.35$ & $+0.029$ & $+0.109$ & yes\\
+HistGBM  & 30d & $+0.069$ & $+1.51$ & $+0.030$ & $+0.049$ & yes\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig1_rank_ic_real_vs_null.pdf}\caption{Rank-IC: real vs null}\label{fig:mlic}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig3_feature_importances.pdf}\caption{Feature importances}\label{fig:mlfeat}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.62\textwidth}\includegraphics[width=\linewidth]{fig4_pred_decile_vs_return.pdf}\caption{Predicted decile vs.\ forward return}\label{fig:mldecile}\end{subfigure}
+\caption{The one signal that beats its null. Out-of-sample rank-IC is positive and significant in 18/18 configurations (left), driven by time-varying features (centre), but every predicted decile has negative median forward return (right): the model predicts \emph{crashes}, not winners.}
+\end{figure}
+
+% =====================================================================
+\part{Survivorship: The Dominant Remaining Threat}\label{part:surv}
+% =====================================================================
+\noindent The thesis has a constructive corollary: if edge requires information the price path cannot supply, the limiting input is the universe itself. This Part shows that survivorship, not method, is what bounds every cross-sectional result above, and that the corrected, information-rich panel the thesis calls for is buildable rather than hypothetical.
+
+\section{Quantifying and Correcting Survivorship}\label{sec:surv}
+Survivorship is the thread running through every cross-sectional and buy-and-hold result above: the universe is sourced from \emph{currently-live} pools, so tokens that died and were delisted never enter it, and the across-coin permutation null does \emph{not} control for it (it breaks the feature$\to$return link, not the panel composition). Its fingerprints are everywhere: the surviving panel's median total return is still $-33\%$ with only $18\%$ of coins up (Section~\ref{sec:ml}'s training panel), the beta-hedge positive lives in exactly the low-turnover/buy-and-hold configurations most exposed to it (Section~\ref{sec:hedge}), and the ML ranker's long-only net edge is plausibly ``benchmark dragged down by a left tail the model sidesteps'' (Section~\ref{sec:ml}). We therefore treat a point-in-time, dead-pool-inclusive universe as the highest-leverage missing input and ask whether it is buildable.
+
+It is. A bounded on-chain feasibility probe (Fig.~\ref{fig:feasmatrix}, Table~\ref{tab:feas}) shows: (i) \textbf{at least $9.2\%$ of currently-live pools are already functionally dead} (recent volume $<1\%$ of peak), and this is a strict \emph{lower} bound, since fully-rugged pools are delisted and never sampled; the dead-pool reserve-decay signature is clean (Fig.~\ref{fig:deaddecay}). (ii) A survivorship-free EVM universe is reconstructable on \emph{free} infrastructure via a chunked factory \texttt{PairCreated} scan cross-referenced against $\sim$zero-reserve pools (the probe's EVM log read returned in $<1$\,s). (iii) Holder-concentration features are computable on free EVM range-queries, but the equivalent Solana calls are rate-limited and need a paid endpoint. (iv) A MEV/sandwich census on the on-disk BSC tape returns \emph{zero} sandwiches, but this is a \emph{coverage artifact}, not evidence of absence: the 2-day tape averages $\sim$1.04 trades per (pair, block) and only $4.7\%$ of (pair, block) groups have the $\geq$3 trades a sandwich needs (Fig.~\ref{fig:feasmatrix}). The binding constraint on closing the open channels is data coverage and RPC tier, not method.
+
+\begin{table}[tbp]\centering\small
+\caption{Feasibility of survivorship-correcting and non-price data channels (bounded on-chain probe).}\label{tab:feas}
+\small\begin{tabular}{@{}l p{4.7cm} p{4.7cm}@{}}\toprule
+channel & status on free infrastructure & what a full build needs\\\midrule
+dead-pool census (EVM)      & feasible ($<$1\,s log read; $\geq$9.2\% dead) & chunked factory scan, all chains\\
+holder concentration (EVM)  & feasible (range-queries)            & batch over universe\\
+holder concentration (Solana)& rate-limited (HTTP 429)            & paid RPC (e.g.\ dedicated endpoint)\\
+MEV / sandwich census       & method works; 0 found is coverage   & deeper per-block receipt tape\\
+per-swap flow ($\geq$6 mo)  & blocked (free-tier quota)            & paid multi-coin flow backfill\\\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[tbp]\centering
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig2_deadpool_decay.pdf}\caption{Dead-pool reserve-decay signature}\label{fig:deaddecay}\end{subfigure}\\[10pt]
+\begin{subfigure}{0.78\textwidth}\includegraphics[width=\linewidth]{fig3_feasibility_matrix.pdf}\caption{Channel-feasibility matrix}\label{fig:feasmatrix}\end{subfigure}
+\caption{Survivorship is correctable. At least 9.2\% of live pools are already dead (left, a lower bound); a dead-pool-inclusive universe and holder features are buildable on free EVM infrastructure, while Solana holders, a MEV census, and a long flow tape need a paid tier (right).}
+\end{figure}
+
+% =====================================================================
+\part*{Synthesis}\addcontentsline{toc}{part}{Synthesis}
+% =====================================================================
+\section{Discussion}\label{sec:disc}
+Fifteen analyses, run from independent angles, make one argument: \emph{a long-only, realistically-costed trader has no edge that price information can supply in DEX-only coins}. The argument is complete in the sense that it closes every route a price-based trader could take: timing fails (Part~\ref{part:timing}); the failure survives the obvious methodological objections (Part~\ref{part:robust}); and the non-timing tactics a practitioner reaches for next (market-neutral hedging, launch timing, liquidity provision, arbitrage, regime conditioning, portfolio aggregation, and order flow) fail as well (Part~\ref{part:alt}). The recurring empirical signature is that \textbf{real data performs worse than, or no better than, its own null}, which we have shown is \emph{stronger} than ``no edge'': the market's temporal structure (negative-drift, anti-momentum, crash-clustered) is actively adverse to long-only positions, so a trader who shuffled it away would lose less.
+
+\paragraph{The ``real-beats-null'' trap.} A central methodological lesson sharpened by the alternative-channel studies: in several places (the beta hedge, the cost sweep, the regime nulls) real \emph{beats} the bar-shuffle null, which a careless reading would call alpha. It is not. On thin, fat-tailed AMM coins the shuffle (i) destroys the constituent return persistence so a shuffled book churns the $\sim$164\bp{} fill cost on noise, and (ii) preserves inflated intrabar ranges that brackets harvest out of sequence. The shuffle is therefore not a neutral baseline for long-only strategies; the only defensible read is the \emph{direction and magnitude} of the real-vs-null gap relative to a no-skill anchor (buy-and-hold, equal-weight), never the gap's existence. We recommend pairing every bar-shuffle null in this asset class with a no-skill economic benchmark.
+
+\paragraph{The one lead, and how to pursue it.} The cross-sectional GBT ranker (Part~\ref{part:ml}) is the sole null-beating result, and its anatomy is instructive: the predictability is real ($t$ up to $+4.66$, 18/18) but lives in \emph{crash avoidance}, not return generation. Two follow-ups are implied and they interact. First, recast the signal from long-only selection to \emph{avoidance/shorting}, which is viable only where a CEX perpetual exists, precisely the plumbing of Section~\ref{sec:hedge}, but now \emph{driven by a working selection signal} rather than the indiscriminate beta hedge that failed. This signal-driven hedge is a genuinely untested compound and the most promising direction the study identifies. Second, the long-only interpretation cannot be trusted until the ranker is re-evaluated on a survivorship-free panel, because its edge may be benchmark-relative artifact rather than selection skill.
+
+\paragraph{The dominant blocker.} Survivorship (Part~\ref{part:surv}) is the single uncontrolled threat shared by every cross-sectional and holding result, and it is \emph{correctable}: a point-in-time, dead-pool-inclusive universe is reconstructable on free infrastructure, and at least $9.2\%$ of currently-live pools are already dead. Building it is the highest-leverage next step; the second-order blocker is a $\geq$6-month multi-coin per-swap flow tape that would both power the order-flow tests and turn the ranker's currently-inert flow features into live ones.
+
+\paragraph{Methodological warning with teeth.} Without the null control and full-distribution reporting, the same pipelines yield thousands of plausible ``winners'', (coin, strategy) pairs with PF$>$1, top-$K$ portfolios with positive in-sample edge, LP pools with double-digit APR, a market-neutral hedge with a $+1.47$ Sharpe, that are pure selection on noise, cost-on-persistence, and survivorship; the bar-shuffled null generates more of the first kind than the real data. Multiple-testing and data-snooping corrections \cite{white2000,sullivan1999,bailey2014,harvey2016} are not optional in this market.
+
+\section{Conclusion and Limitations}\label{sec:concl}
+The argument of this paper reduces to one sentence: in DEX-only markets, an exploitable edge cannot be built from price information alone. On a 4{,}990-coin, 27-chain, survivorship-aware corpus, long-only price-based strategies have no out-of-sample edge net of cost at any horizon and consistently fail to beat a bar-shuffled null, a structural consequence of a negative-drift, fat-tailed, anti-momentum, crash-clustered, expensive market in which only $\sim$47\% of assets are even tradeable and none reaches positive expectancy. This verdict is robust to the intrabar exit convention, the in-sample selection regime, and the cost model (Part~\ref{part:robust}), and it extends to market-neutral hedging, launch timing, liquidity provision, cross-pool arbitrage, regime conditioning, portfolio aggregation, and order flow (Part~\ref{part:alt}). The sole null-beating signal is a cross-sectional learner whose skill is crash-avoidance rather than return-seeking (Part~\ref{part:ml}). The principal limitations are: (i) \emph{survivorship}, the live-pool universe under-counts dead tokens, biasing every holding and cross-sectional metric optimistically (so the negative \emph{timing} results are conservative, but the one positive must be re-tested on a corrected panel; Part~\ref{part:surv} shows the correction is feasible); (ii) a \emph{$\sim$6-month} (daily) / $\sim$42-day (hourly) window, so the hedge and regime studies in particular see a single market regime; (iii) \emph{long-only spot} by construction, with passive-execution cost modeling and \emph{coverage-limited} order-flow and holder data; and (iv) bar-aggregated OHLCV that cannot resolve intrabar arbitrage simultaneity. We read the evidence as a strong instance of weak-form efficiency at the microcap-DEX frontier (not because the market is sophisticated, but because what it offers a long-only price trader is, net of cost, worse than noise) while leaving exactly two doors open: a survivorship-free panel, and a non-price signal (the crash-avoidance ranker, and a real flow tape) used as \emph{selection}, not timing.
+
+\appendix
+\section{Per-Chain Summary}\label{app:perchain}
+Table~\ref{tab:perchain} reports, for each of the 27 chains, the number of coins with $\geq$10 clean daily bars, the median and mean round-trip cost at 0.25\%-of-reserve sizing, median USD reserve, median total return over the sample, the survivor fraction, and the fraction of coins ending more than 50\% below their own peak. Chains are ordered by coin count.
+
+\begingroup\footnotesize
+\setlength{\tabcolsep}{4.5pt}
+\begin{longtable}{lrrrrrrr}
+\caption{Per-chain coverage and summary statistics (daily; sizing $=0.25\%$ of reserve).}\label{tab:perchain}\\
+\toprule
+chain & $N$ & cost\,med & cost\,mean & reserve\,med & tot.ret & \%surv & \%dn50\\
+ & & (bp) & (bp) & (\$) & median & & \\\midrule
+\endfirsthead
+\toprule chain & $N$ & cost\,med & cost\,mean & reserve\,med & tot.ret & \%surv & \%dn50\\\midrule
+\endhead
+\bottomrule
+\endfoot
+eth & 490 & 223 & 472 & 376{,}593 & $-16.0\%$ & 32.0 & 29.6\\
+bsc & 377 & 167 & 206 & 222{,}587 & $-26.7\%$ & 30.8 & 37.4\\
+polygon & 342 & 161 & 193 & 62{,}842 & $-18.3\%$ & 23.7 & 25.4\\
+arbitrum & 318 & 164 & 186 & 95{,}705 & $-31.3\%$ & 16.0 & 30.5\\
+hyperevm & 277 & 170 & 216 & 38{,}232 & $-0.2\%$ & 44.0 & 14.4\\
+solana & 260 & 160 & 174 & 322{,}546 & $-16.1\%$ & 33.5 & 27.3\\
+sui & 246 & 162 & 207 & 39{,}392 & $-32.0\%$ & 15.0 & 42.7\\
+avax & 236 & 168 & 203 & 48{,}188 & $-18.5\%$ & 19.5 & 20.8\\
+pulsechain & 231 & 171 & 205 & 35{,}273 & $-27.8\%$ & 30.3 & 51.9\\
+optimism & 212 & 168 & 201 & 48{,}783 & $-20.2\%$ & 17.0 & 23.1\\
+base & 205 & 160 & 169 & 316{,}011 & $-13.4\%$ & 31.7 & 22.0\\
+ton & 138 & 189 & 235 & 18{,}373 & $+10.2\%$ & 58.0 & 43.5\\
+abstract & 122 & 218 & 246 & 14{,}405 & $-69.1\%$ & 7.4 & 64.8\\
+tron & 108 & 161 & 195 & 94{,}559 & $-0.3\%$ & 40.7 & 15.7\\
+sonic & 101 & 187 & 247 & 18{,}579 & $-27.7\%$ & 17.8 & 45.5\\
+zksync & 97 & 189 & 237 & 18{,}365 & $-0.7\%$ & 22.7 & 30.9\\
+linea & 85 & 178 & 239 & 22{,}320 & $-19.3\%$ & 25.9 & 31.8\\
+berachain & 75 & 172 & 219 & 31{,}723 & $-31.1\%$ & 18.7 & 49.3\\
+unichain & 61 & 168 & 206 & 46{,}472 & $-0.1\%$ & 37.7 & 9.8\\
+mantle & 61 & 163 & 210 & 110{,}043 & $-0.3\%$ & 44.3 & 21.3\\
+scroll & 54 & 233 & 261 & 13{,}072 & $-20.3\%$ & 18.5 & 20.4\\
+blast & 45 & 174 & 200 & 28{,}525 & $-40.4\%$ & 20.0 & 57.8\\
+ronin & 44 & 168 & 222 & 46{,}486 & $-12.8\%$ & 27.3 & 38.6\\
+ftm & 41 & 204 & 256 & 16{,}100 & $-23.0\%$ & 39.0 & 48.8\\
+aptos & 41 & 165 & 204 & 81{,}844 & $-0.4\%$ & 31.7 & 19.5\\
+mode & 11 & 238 & 247 & 12{,}600 & $-0.2\%$ & 36.4 & 18.2\\
+sei & 1 & 212 & 212 & 15{,}104 & $-73.2\%$ & 0.0 & 100.0\\
+\end{longtable}
+\endgroup
+
+\section{Study Inventory}\label{app:inventory}
+For navigation, Table~\ref{tab:inventory} lists all fifteen analyses, the part in which each appears, and its one-line verdict against the null.
+
+\begin{table}[tbp]\centering\small
+\caption{The fifteen analyses and their verdicts.}\label{tab:inventory}
+\begin{tabular}{llp{8.6cm}}\toprule
+part & analysis & verdict vs.\ null\\\midrule
+I & return process        & negative-drift, fat-tailed, anti-momentum (mechanism)\\
+I & intraday scalping      & gross edge $\approx0$; net $\approx-$cost; real $<$ null\\
+I & swing / trend          & anti-persistent ($VR<1$); trend loses; real $<$ null\\
+I & cross-sectional (linear)& top-$K$ does not beat passive; $\sim$6-dim ceiling\\
+I & cross-chain frontier   & $\sim$47\% tradeable; no chain positive; real $<$ null\\
+II & intrabar TP/SL bound   & convention swing $\leq$23\bp/trade; verdict invariant\\
+II & in-sample selection    & stricter IS never lifts OOS; real $\ll$ null\\
+II & cost/depth sensitivity & net-negative even at zero cost; no break-even\\
+III & market-neutral hedge   & no edge; positive is turnover artifact, $p=0.26$\\
+III & launch window          & flat median path; filter never beats null\\
+III & liquidity provision    & fees swamped by LVR; selection null-equivalent\\
+III & cross-pool arbitrage   & standing dispersion $<$ cost; real tighter than null\\
+III & BTC-regime conditioning& net-negative in every regime\\
+III & portfolio of streams   & diversified losers; $\sim\$100$/stream capacity\\
+III & order flow             & no edge on data in hand; coverage-limited\\
+IV & cross-sectional ML     & \textbf{beats null} (18/18), but crash-avoidance, not return\\
+V & survivorship feasibility& $\geq$9.2\% live pools dead; correction is buildable\\\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Reproducibility}\label{app:repro}
+All analyses are seeded (\texttt{numpy} default-RNG, fixed seeds; per-coin RNG keyed by pair hash where used) and reproduce identically across reruns. Each analysis ships its engine and figure scripts and its raw per-strategy evaluation tables; figures are vector PDF. The cost model is the per-fill round-trip of \eqref{eq:cost} with per-chain gas and native-token prices; the perp and liquidity-provision studies state their additional cost terms in-text. The analyses were produced independently under the shared methodology of Section~\ref{sec:method}, which we view as a robustness feature: the agreement is not an artifact of a single pipeline.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{fama1970} Fama, E. F. (1970). Efficient Capital Markets: A Review of Theory and Empirical Work. \textit{Journal of Finance} 25(2), 383--417.
+\bibitem{fama1965} Fama, E. F. (1965). The Behavior of Stock-Market Prices. \textit{Journal of Business} 38(1), 34--105.
+\bibitem{mandelbrot1963} Mandelbrot, B. (1963). The Variation of Certain Speculative Prices. \textit{Journal of Business} 36(4), 394--419.
+\bibitem{cont2001} Cont, R. (2001). Empirical Properties of Asset Returns: Stylized Facts and Statistical Issues. \textit{Quantitative Finance} 1(2), 223--236.
+\bibitem{hill1975} Hill, B. M. (1975). A Simple General Approach to Inference About the Tail of a Distribution. \textit{Annals of Statistics} 3(5), 1163--1174.
+\bibitem{lo1988} Lo, A. W., \& MacKinlay, A. C. (1988). Stock Market Prices Do Not Follow Random Walks. \textit{Review of Financial Studies} 1(1), 41--66.
+\bibitem{jegadeesh1993} Jegadeesh, N., \& Titman, S. (1993). Returns to Buying Winners and Selling Losers. \textit{Journal of Finance} 48(1), 65--91.
+\bibitem{engle1982} Engle, R. F. (1982). Autoregressive Conditional Heteroscedasticity with Estimates of the Variance of United Kingdom Inflation. \textit{Econometrica} 50(4), 987--1007.
+\bibitem{politis1994} Politis, D. N., \& Romano, J. P. (1994). The Stationary Bootstrap. \textit{JASA} 89(428), 1303--1313.
+\bibitem{white2000} White, H. (2000). A Reality Check for Data Snooping. \textit{Econometrica} 68(5), 1097--1126.
+\bibitem{sullivan1999} Sullivan, R., Timmermann, A., \& White, H. (1999). Data-Snooping, Technical Trading Rule Performance, and the Bootstrap. \textit{Journal of Finance} 54(5), 1647--1691.
+\bibitem{bailey2014} Bailey, D. H., \& L\'opez de Prado, M. (2014). The Deflated Sharpe Ratio. \textit{Journal of Portfolio Management} 40(5), 94--107.
+\bibitem{harvey2016} Harvey, C. R., Liu, Y., \& Zhu, H. (2016). \ldots and the Cross-Section of Expected Returns. \textit{Review of Financial Studies} 29(1), 5--68.
+\bibitem{liu2021} Liu, Y., \& Tsyvinski, A. (2021). Risks and Returns of Cryptocurrency. \textit{Review of Financial Studies} 34(6), 2689--2727.
+\bibitem{makarov2020} Makarov, I., \& Schoar, A. (2020). Trading and Arbitrage in Cryptocurrency Markets. \textit{Journal of Financial Economics} 135(2), 293--319.
+\bibitem{lehar2021} Lehar, A., \& Parlour, C. A. (2021). Decentralized Exchanges. Working Paper.
+\bibitem{barbon2023} Barbon, A., \& Ranaldo, A. (2023). On the Quality of Cryptocurrency Markets: Centralized vs.\ Decentralized Exchanges. Working Paper.
+\bibitem{capponi2021} Capponi, A., \& Jia, R. (2021). The Adoption of Blockchain-Based Decentralized Exchanges. Working Paper.
+\bibitem{milionis2022} Milionis, J., Moallemi, C. C., Roughgarden, T., \& Zhang, A. L. (2022). Automated Market Making and Loss-Versus-Rebalancing. Working Paper.
+\end{thebibliography}
+
+\end{document}
