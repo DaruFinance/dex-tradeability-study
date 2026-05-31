@@ -1,66 +1,63 @@
-"""Figures for the cross-sectional ML ranker gap study."""
+"""Figures for the cross-sectional ML ranker gap study.
+
+LEAKAGE-FREE: consumes the point-in-time re-run outputs
+  ml_pit_results.csv        (six model x horizon cells; rank-IC, t, perm-p, null p95)
+  feature_importances_pit.csv
+  decile_pit.csv            (median forward return by predicted decile)
+NOT the earlier leaky snapshot-feature outputs. Run `python3 ml_ranker_pit.py 200`
+first to (re)generate those inputs.
+"""
 import numpy as np, pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
-from scipy.stats import spearmanr
 
-OUT = Path("./_gaps/ml_xsec_ranker")
-FIG = OUT / "figs"
-res = pd.read_csv(OUT / "ml_ranker_results.csv")
+OUT = Path(".")
+FIG = OUT / "figs"; FIG.mkdir(exist_ok=True)
+ACC = "#b07a2e"; MUT = "#888888"; FGC = "#222222"
 
-# ---- Fig 1: rank-IC real vs null, per config ----
-fig, ax = plt.subplots(figsize=(9,5))
-labels = [f"{r.model}\nR{r.R} K{r.K}" for r in res.itertuples()]
-x = np.arange(len(res)); w = 0.38
-ax.bar(x-w/2, res.ic_mean_real, w, label="real IC", color="#2166ac")
-ax.bar(x+w/2, res.ic_mean_null, w, label="null IC (labels permuted)", color="#b2182b", alpha=0.8)
-ax.axhline(0, color="k", lw=0.8)
-ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=7, rotation=0)
-ax.set_ylabel("OOS cross-sectional rank-IC (Spearman pred vs fwd ret)")
-ax.set_title("Learned ranker has real OOS rank-IC vs ~0 label-permuted null\n(DEX-only coins, daily, strict WFO, all features causal)")
-ax.legend()
-fig.tight_layout(); fig.savefig(FIG/"fig1_rank_ic_real_vs_null.pdf"); plt.close(fig)
+res = pd.read_csv(OUT / "ml_pit_results.csv").sort_values(["R", "model"]).reset_index(drop=True)
+lab = [f"{m}\n{R}d" for m, R in zip(res.model, res.R)]
+x = np.arange(len(res))
 
-# ---- Fig 2: net top-K edge vs costed benchmark (median, winsorized) ----
-fig, ax = plt.subplots(figsize=(9,5))
-ax.bar(x-w/2, res.edge_med_real, w, label="real median edge", color="#2166ac")
-ax.bar(x+w/2, res.edge_med_null, w, label="null median edge", color="#b2182b", alpha=0.8)
-ax.axhline(0, color="k", lw=0.8)
-ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=7)
-ax.set_ylabel("Median per-rebalance net edge: top-K minus costed equal-weight")
-ax.set_title("Net tradeable edge (top-K vs costed benchmark) straddles zero, ~= null\n164bp/leg cost, fwd returns winsorized [-95%,+300%]")
-ax.legend()
-fig.tight_layout(); fig.savefig(FIG/"fig2_net_edge_real_vs_null.pdf"); plt.close(fig)
+# ---- Fig 1: leakage-free rank-IC vs label-permutation null (p95 band + perm-p) ----
+fig, ax = plt.subplots(figsize=(7.2, 3.4))
+ax.bar(x, res.ic_mean_real, color=[ACC if p < 0.05 else MUT for p in res.perm_p], width=0.6, label="real rank-IC")
+ax.plot(x, res.null_ic_p95, "k_", ms=18, mew=2, label="null 95th pct (200 shuffles)")
+for i, (ic, p) in enumerate(zip(res.ic_mean_real, res.perm_p)):
+    ax.text(i, ic + 0.004, f"p={p:.3f}", ha="center", fontsize=7.5, color=FGC)
+ax.axhline(0, color="k", lw=.6); ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=8)
+ax.set_ylabel("out-of-sample rank-IC")
+ax.set_title("Leakage-free cross-sectional rank-IC vs label-permutation null", fontsize=10)
+ax.legend(fontsize=8, frameon=False); fig.tight_layout()
+fig.savefig(FIG / "fig1_rank_ic_real_vs_null.pdf"); plt.close(fig)
 
-# ---- Fig 3: feature importances ----
-imp = pd.read_csv(OUT / "feature_importances.csv")
-fig, ax = plt.subplots(figsize=(8,6))
-ax.barh(imp.feature[::-1], imp.importance[::-1], color="#4d4d4d")
-ax.set_xlabel("Mean normalized gain importance (LGBM, R=14 K=20, across WFO folds)")
-ax.set_title("Feature importances of the cross-sectional ranker")
-fig.tight_layout(); fig.savefig(FIG/"fig3_feature_importances.pdf"); plt.close(fig)
+# ---- Fig 2: top-K net edge per cell (leakage-free) ----
+fig, ax = plt.subplots(figsize=(7.2, 3.4))
+ax.bar(x, res.edge_med, color=MUT, width=0.6)
+ax.axhline(0, color="k", lw=.6); ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=8)
+ax.set_ylabel("median per-rebalance net edge\n(top-K minus costed equal-weight)")
+ax.set_title("Top-K net edge (leakage-free): small, winsorization/survivorship-driven", fontsize=9.5)
+fig.tight_layout(); fig.savefig(FIG / "fig2_net_edge_real_vs_null.pdf"); plt.close(fig)
 
-# ---- Fig 4: OOS pred-rank vs realized fwd return decile (the IC, visualized) ----
-d = np.load(OUT / "oos_ic_scatter.npz")
-pred, y = d["pred"], d["y"]
-yc = np.clip(y, -0.95, 3.0)
-# decile of prediction -> mean realized winsorized fwd return
-order = np.argsort(pred)
-ranks = np.argsort(order).astype(float) / max(len(pred)-1,1)
-bins = np.clip((ranks*10).astype(int), 0, 9)
-mean_ret = [yc[bins==b].mean() for b in range(10)]
-med_ret  = [np.median(yc[bins==b]) for b in range(10)]
-fig, ax = plt.subplots(figsize=(8,5))
-ax.plot(range(1,11), mean_ret, "o-", label="mean fwd ret (winsorized)", color="#2166ac")
-ax.plot(range(1,11), med_ret, "s--", label="median fwd ret", color="#762a83")
-ax.axhline(0, color="k", lw=0.8)
-ax.set_xlabel("Predicted-score decile (1=lowest, 10=highest)")
-ax.set_ylabel("Realized forward 14-day return")
-sp = spearmanr(pred, y).correlation
-ax.set_title(f"Monotone OOS pred-decile vs realized return (pooled rank-IC={sp:+.3f})\nsignal is real but small; top decile is where cost eats it")
-ax.legend()
-fig.tight_layout(); fig.savefig(FIG/"fig4_pred_decile_vs_return.pdf"); plt.close(fig)
+# ---- Fig 3: leakage-free feature importances (point-in-time age in gold) ----
+imp = pd.read_csv(OUT / "feature_importances_pit.csv").head(12).iloc[::-1]
+fig, ax = plt.subplots(figsize=(6.6, 3.6))
+ax.barh(imp.feature, imp.importance, color=[ACC if f == "log_age_pit" else MUT for f in imp.feature])
+ax.set_xlabel("gain importance")
+ax.set_title("Feature importances (leakage-free; point-in-time age in gold)", fontsize=10)
+fig.tight_layout(); fig.savefig(FIG / "fig3_feature_importances.pdf"); plt.close(fig)
 
-print("figs written")
+# ---- Fig 4: predicted decile vs forward return (U-shaped, every decile negative) ----
+dec = pd.read_csv(OUT / "decile_pit.csv")
+fig, ax = plt.subplots(figsize=(6.6, 3.4))
+ax.bar(dec.dec, dec.y * 100, color=[ACC if d == dec.dec.max() else MUT for d in dec.dec])
+ax.axhline(0, color="k", lw=.6)
+ax.set_xlabel("predicted decile (0 = lowest score, 9 = highest)")
+ax.set_ylabel("median forward return (%)")
+ax.set_title("Every predicted decile is negative; top decile is 'least bad' (leakage-free)", fontsize=9.5)
+ax.set_xticks(range(10)); fig.tight_layout()
+fig.savefig(FIG / "fig4_pred_decile_vs_return.pdf"); plt.close(fig)
+
+print("figs written (leakage-free, from *_pit.csv)")

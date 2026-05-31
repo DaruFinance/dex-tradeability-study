@@ -28,10 +28,16 @@ distributions are statistically indistinguishable from, or worse than, the
 shuffled-bar nulls. A large battery of extended studies (order-flow features,
 cross-sectional selection, machine-learning ranking, liquidity-provision and
 market-making proxies, launch-cohort and dispersion effects) is reported in the
-same disciplined frame. The one qualified positive is a **crash-avoidance
-signal** built on a market-regime filter: it does not generate alpha, but it
-reduces drawdown participation in adverse regimes, and that effect survives the
-null control under stated assumptions.
+same disciplined frame. The one qualified positive is a **leakage-free
+cross-sectional machine-learning ranker** (point-in-time features only): its
+out-of-sample rank-IC is ~0.06-0.08 at the 7- and 14-day horizons
+(label-permutation p ~ 0.005), and insignificant at 30 days. It does not
+generate alpha; its skill is **crash-avoidance** (every predicted decile's
+median forward return is negative, so it flags which coins fall, not which
+rise), and the long-only translation is a winsorization/survivorship artifact.
+We therefore report it as a lead, not an edge. See `ml_ranker_pit.py` for the
+leakage-free re-run (the earlier `ml_ranker.py` used end-of-sample snapshot
+features and is superseded).
 
 ## Repository layout
 
