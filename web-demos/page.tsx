@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/layout/Container";
 import { CitationBlock } from "@/components/article/CitationBlock";
 import { FigureWithCaption } from "@/components/article/FigureWithCaption";
-import { ArrowUpRight, FileText, Github, Lock } from "lucide-react";
+import { ArrowUpRight, FileText, Github } from "lucide-react";
 import CostFrontierDemo from "@/components/research/demos/dex/CostFrontierDemo";
 import NullControlDemo from "@/components/research/demos/dex/NullControlDemo";
 import CrashAvoidanceDemo from "@/components/research/demos/dex/CrashAvoidanceDemo";
@@ -11,11 +11,10 @@ import CrashAvoidanceDemo from "@/components/research/demos/dex/CrashAvoidanceDe
 const TITLE = "No Edge Without Information";
 const SUBTITLE = "An empirical study of tradeability in decentralized-exchange-only cryptocurrencies";
 const REPO_URL = "https://github.com/DaruFinance/dex-tradeability-study";
+const SSRN_URL = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6858778";
 
-// Unlisted preview: keep out of search and out of site navigation until reviewed.
 export const metadata: Metadata = {
-  title: `${TITLE} (preview)`,
-  robots: { index: false, follow: false },
+  title: TITLE,
 };
 
 const TLDR = [
@@ -45,32 +44,29 @@ const METHOD = [
 ];
 
 const apa =
-  "Gatto, D. V. (2026). No Edge Without Information: An Empirical Study of Tradeability in Decentralized-Exchange-Only Cryptocurrencies. SSRN Working Paper (forthcoming).";
+  "Gatto, D. V. (2026). No Edge Without Information: An Empirical Study of Tradeability in Decentralized-Exchange-Only Cryptocurrencies. SSRN Working Paper 6858778. https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6858778";
 const bibtex = `@techreport{gatto2026dex,
   author      = {Gatto, Daniel V.},
   title       = {No Edge Without Information: An Empirical Study of
                  Tradeability in Decentralized-Exchange-Only Cryptocurrencies},
   year        = {2026},
-  type        = {SSRN Working Paper (forthcoming)},
-  note        = {Preprint}
+  type        = {SSRN Working Paper},
+  number      = {6858778},
+  url         = {https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6858778}
 }`;
 
 export default function DexResearchPage() {
   return (
     <Container>
       <div className="py-16 md:py-20 max-w-5xl mx-auto">
-        {/* unlisted preview banner */}
-        <div className="mb-8 flex items-center gap-3 border border-[color:var(--color-border)] bg-[color:var(--color-surface)]/40 px-4 py-3">
-          <Lock className="w-4 h-4 text-[color:var(--color-accent)] shrink-0" />
-          <p className="font-mono text-[11px] text-[color:var(--color-fg-muted)] leading-relaxed">
-            Unlisted preview. Not linked from the site and not indexed; shared for review ahead of
-            the SSRN posting.
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-accent)]">
+            Research · extended study
           </p>
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-muted)]">
+            Working paper · under review
+          </span>
         </div>
-
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-accent)]">
-          Research preview · extended study
-        </p>
         <h1 className="mt-4 font-display text-4xl md:text-5xl font-semibold tracking-[-0.015em] leading-[1.08]">
           {TITLE}
         </h1>
@@ -86,22 +82,23 @@ export default function DexResearchPage() {
           reproduce the core mechanics in the browser.
         </p>
 
-        {/* action boxes: SSRN (coming soon) + repo */}
+        {/* action boxes: SSRN + repo */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-px bg-[color:var(--color-border)]">
-          <div className="bg-[color:var(--color-bg)] p-6 opacity-70 cursor-default select-none">
+          <a
+            href={SSRN_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="bg-[color:var(--color-bg)] hover:bg-[color:var(--color-surface)] transition-colors p-6 group"
+          >
             <div className="flex items-center justify-between">
-              <FileText className="w-5 h-5 text-[color:var(--color-fg-subtle)]" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-fg-subtle)]">
-                coming soon
-              </span>
+              <FileText className="w-5 h-5 text-[color:var(--color-accent)]" />
+              <ArrowUpRight className="w-4 h-4 text-[color:var(--color-fg-muted)] group-hover:text-[color:var(--color-fg)]" />
             </div>
-            <h3 className="mt-3 font-display text-xl font-semibold text-[color:var(--color-fg-muted)]">
-              View on SSRN
-            </h3>
-            <p className="mt-1 font-mono text-[11px] text-[color:var(--color-fg-subtle)]">
-              working paper, not yet posted
+            <h3 className="mt-3 font-display text-xl font-semibold">View on SSRN</h3>
+            <p className="mt-1 font-mono text-[11px] text-[color:var(--color-fg-muted)]">
+              papers.ssrn.com/abstract=6858778
             </p>
-          </div>
+          </a>
           <a
             href={REPO_URL}
             target="_blank"
@@ -211,20 +208,21 @@ export default function DexResearchPage() {
 
             <h3 id="one-signal">The one signal, and why it does not pay</h3>
             <p>
-              A single test beats its null: a cross-sectional gradient-boosted ranker on time-varying
-              causal features, with out-of-sample rank information coefficient well above its
-              label-permutation baseline in every configuration. But its skill is crash avoidance,
-              not return seeking. Sort the universe into deciles by the model&apos;s score and every
-              decile&apos;s median forward return is negative; the top predicted decile is not the
-              top-return decile. The information is in the left tail, which a long-only AMM trader
-              cannot reach.
+              A single test beats its null: a leakage-free cross-sectional gradient-boosted ranker on
+              point-in-time causal features. Its out-of-sample rank information coefficient is small
+              but real at the 7- and 14-day horizons (about 0.06 to 0.08, label-permutation p around
+              0.005) and insignificant at 30 days. But its skill is crash avoidance, not return
+              seeking. Sort the universe into deciles by the model&apos;s score and every
+              decile&apos;s median forward return is negative; the top predicted decile is the least
+              bad, not the best. The information is in the left tail, which a long-only AMM trader
+              cannot reach, so we report it as a lead, not an edge.
             </p>
             <CrashAvoidanceDemo />
             <FigureWithCaption
               src="/figures/dex/crash-decile.png"
               alt="Predicted decile versus forward return: every decile is negative; the model predicts which coins crash, not which rise."
               number="3"
-              caption="From the paper: forward return by predicted decile. Every decile is negative and the top predicted decile is not the best performer. The signal identifies crashes, not winners."
+              caption="From the paper (leakage-free, point-in-time features): forward return by predicted decile. Every decile is negative and the top predicted decile is the least bad, not the best. The signal identifies crashes, not winners."
               width={1498}
               height={936}
             />
