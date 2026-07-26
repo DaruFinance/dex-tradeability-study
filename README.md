@@ -4,7 +4,7 @@
 
 **Daniel Gatto**
 
-Working paper, under review · [SSRN 6858778](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6858778) · [Interactive write-up](https://www.daru.finance/research/dex-only)
+Working paper, under review · [SSRN 6858778](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6858778) · [Interactive write-up](https://daru.finance/research/dex-only)
 
 ## Overview
 
@@ -77,7 +77,7 @@ phased engines in `engines/` reproduce the panel, the backtests, the
 walk-forward results, and the null controls in sequence.
 
 Companion write-up with interactive figures:
-[daru.finance/research/dex-only](https://www.daru.finance/research/dex-only)
+[daru.finance/research/dex-only](https://daru.finance/research/dex-only)
 
 ## Data
 
